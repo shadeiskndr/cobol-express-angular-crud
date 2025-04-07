@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  cobol-backend:
+    build:
+      context: ./cobol-backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./cobol-backend/customer-database.cbl:/app/customer-database.cbl
+      - ./cobol-backend/entrypoint.sh:/app/entrypoint.sh
+      - ./cobol-backend/server.js:/app/server.js
+      - cobol-data:/app/data
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  express-api:
+    build:
+      context: ./express-api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./express-api:/app
+      - /app/node_modules
+    depends_on:
+      - cobol-backend
+    networks:
+      - app-network
+    environment:
+      - NODE_ENV=production
+      - COBOL_HOST=cobol-backend
+    restart: unless-stopped
+
+  angular-frontend:
+    build:
+      context: ./angular-webclient
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - express-api
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  cobol-data:

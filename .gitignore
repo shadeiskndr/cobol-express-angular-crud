@@ -1,0 +1,65 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Angular specific
+angular-webclient/dist/
+angular-webclient/.angular/
+angular-webclient/.sass-cache/
+angular-webclient/connect.lock
+angular-webclient/coverage/
+angular-webclient/libpeerconnection.log
+angular-webclient/testem.log
+angular-webclient/typings/
+
+# Express API specific
+express-api/node_modules/
+express-api/.env
+express-api/logs/
+express-api/coverage/
+
+# COBOL specific
+cobol-backend/*.so
+cobol-backend/*.o
+cobol-backend/*.exe
+cobol-backend/*.dll
+cobol-backend/data/*.dat
+cobol-backend/data/*.idx
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+*.iws
+.idea_modules/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Docker
+.dockerignore
+
+# Logs
+logs
+*.log
+
+# txt-json directory (if you want to exclude your documentation files)
+txt-json/

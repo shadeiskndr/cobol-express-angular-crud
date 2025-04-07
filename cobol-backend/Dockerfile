@@ -1,0 +1,29 @@
+FROM olegkunitsyn/gnucobol:3.1
+
+WORKDIR /app
+
+# Install Node.js and required dependencies
+RUN apk update && apk add --no-cache \
+    procps \
+    netcat-openbsd \
+    nodejs \
+    npm
+
+# Copy COBOL program and compile it
+COPY customer-database.cbl .
+RUN cobc -x -free -o customer-database customer-database.cbl
+
+# Copy server code
+COPY server.js .
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Copy and make entrypoint executable
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Expose port for socket communication
+EXPOSE 8080
+
+CMD ["./entrypoint.sh"]
