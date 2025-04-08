@@ -587,8 +587,7 @@
                            PERFORM GENERATE-ERROR-RESPONSE
                        NOT INVALID KEY
                            MOVE 1 TO WS-SUCCESS-FLAG
-                           STRING '{"success":true,"message":
-                                   "Customer updated",'
+                           STRING '{"success":true,"message":"Customer updated",'
                                   '"id":' DELIMITED BY SIZE
                                   WS-CUSTOMER-ID DELIMITED BY SIZE
                                   '}' DELIMITED BY SIZE
@@ -622,11 +621,11 @@
                            PERFORM GENERATE-ERROR-RESPONSE
                        NOT INVALID KEY
                            MOVE 1 TO WS-SUCCESS-FLAG
-                           STRING '{"success":true,"message":
-                                   "Customer deleted",'
-                                  '"id":' DELIMITED BY SIZE
+                           STRING '{"success":true,"message":"' DELIMITED BY SIZE
+                                  'Customer deleted",' DELIMITED BY SIZE
+                                  '"id":"' DELIMITED BY SIZE
                                   WS-CUSTOMER-ID DELIMITED BY SIZE
-                                  '}' DELIMITED BY SIZE
+                                  '"}' DELIMITED BY SIZE
                                INTO WS-RESPONSE
                    END-DELETE
            END-READ
@@ -940,7 +939,7 @@
        
        GENERATE-ERROR-RESPONSE.
            STRING '{"success":false,"error":"' DELIMITED BY SIZE
-                  WS-ERROR-MESSAGE DELIMITED BY SIZE
+                  FUNCTION TRIM(WS-ERROR-MESSAGE) DELIMITED BY SIZE
                   '"}' DELIMITED BY SIZE
                INTO WS-RESPONSE.
        
