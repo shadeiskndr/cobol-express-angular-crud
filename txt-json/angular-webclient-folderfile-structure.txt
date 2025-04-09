@@ -1,0 +1,35 @@
+angular-webclient
+├── .editorconfig
+├── .gitignore
+├── angular.json
+├── dist
+│   └── angular-webclient
+│       ├── 3rdpartylicenses.txt
+│       └── browser
+│           ├── favicon.ico
+│           ├── index.html
+│           ├── main-ZXJ67POE.js
+│           ├── polyfills-FFHMD2TL.js
+│           └── styles-5INURTSO.css
+├── Dockerfile
+├── nginx.conf
+├── package-lock.json
+├── package.json
+├── README.md
+├── src
+│   ├── app
+│   │   ├── app.component.html
+│   │   ├── app.component.scss
+│   │   ├── app.component.spec.ts
+│   │   ├── app.component.ts
+│   │   ├── app.config.ts
+│   │   └── app.routes.ts
+│   ├── assets
+│   │   └── .gitkeep
+│   ├── favicon.ico
+│   ├── index.html
+│   ├── main.ts
+│   └── styles.scss
+├── tsconfig.app.json
+├── tsconfig.json
+└── tsconfig.spec.json

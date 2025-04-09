@@ -1,0 +1,10 @@
+{
+  "customers": [
+    {
+      "id": 12345,
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "status": "ACTIVE"
+    }
+  ]
+}
