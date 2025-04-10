@@ -51,8 +51,8 @@ class TodoListService {
     });
   }
 
-  async getTodo(id) {
-    return this.executeOperation("GET", { id });
+  async getTodo(id, userId) {
+    return this.executeOperation("GET", { id, userId });
   }
 
   async createTodo(todoData) {
@@ -63,12 +63,12 @@ class TodoListService {
     return this.executeOperation("UPDATE", todoData);
   }
 
-  async deleteTodo(id) {
-    return this.executeOperation("DELETE", { id });
+  async deleteTodo(id, userId) {
+    return this.executeOperation("DELETE", { id, userId });
   }
 
-  async listTodos() {
-    return this.executeOperation("LIST");
+  async listTodos(userId) {
+    return this.executeOperation("LIST", { userId });
   }
 
   // Advanced features
