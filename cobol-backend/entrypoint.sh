@@ -3,15 +3,19 @@ set -e
 
 # Set environment variables for data file location
 export DD_TODO_FILE=/app/data/todos.dat
+export DD_USER_FILE=/app/data/users.dat
 
 # Verify COBOL executable exists
-if [ ! -f /app/todo-list ]; then
-  echo "COBOL executable not found, recompiling..."
-  cobc -x -free -o todo-list todo-list.cbl
+if [ ! -f /app/combined-program ]; then
+  echo "COBOL program executable not found, compiling..."
+  cobc -x -free -o combined-program combined-program.cbl
 fi
 
 # Make sure it's executable
-chmod +x /app/todo-list
+chmod +x /app/combined-program
+
+mkdir -p /app/data
+chmod -R 777 /app/data
 
 # Start the Node.js socket server
 echo "Starting COBOL Backend server..."

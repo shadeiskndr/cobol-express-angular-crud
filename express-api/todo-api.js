@@ -2,6 +2,8 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const todoService = require("./db-middleware");
+const userService = require("./user-middleware");
+const { authenticateToken } = require("./auth-middleware");
 
 const app = express();
 app.use(bodyParser.json());
@@ -11,11 +13,119 @@ app.use(cors());
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
+// ===== USER ROUTES =====
+
+// Register new user
+app.post(
+  "/api/users/register",
+  asyncHandler(async (req, res) => {
+    const userData = req.body;
+
+    if (!userData.username || !userData.email || !userData.password) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: username, email, password",
+      });
+    }
+
+    // Generate a unique ID if not provided
+    if (!userData.id) {
+      userData.id = Math.floor(10000 + Math.random() * 90000); // 5-digit number
+    }
+
+    const result = await userService.createUser(userData);
+
+    if (result.success === false) {
+      return res.status(400).json(result);
+    }
+
+    // Don't return the password
+    delete result.password;
+
+    res.status(201).json(result);
+  })
+);
+
+// Login user
+app.post(
+  "/api/users/login",
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and password are required",
+      });
+    }
+
+    const result = await userService.login(email, password);
+
+    if (result.success === false) {
+      return res.status(401).json(result);
+    }
+
+    // Generate JWT token
+    const token = userService.generateToken(result);
+
+    // Return user data with token
+    res.json({
+      success: true,
+      user: {
+        id: result.id,
+        username: result.username,
+        email: result.email,
+      },
+      token,
+    });
+  })
+);
+
+// Get user profile
+app.get(
+  "/api/users/profile",
+  authenticateToken,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const result = await userService.getUser(userId);
+
+    if (result.success === false) {
+      return res.status(404).json(result);
+    }
+
+    // Don't return the password
+    delete result.password;
+
+    res.json(result);
+  })
+);
+
+// Update user profile
+app.put(
+  "/api/users/profile",
+  authenticateToken,
+  asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const userData = { ...req.body, id: userId };
+
+    const result = await userService.updateUser(userData);
+
+    if (result.success === false) {
+      return res.status(400).json(result);
+    }
+
+    res.json(result);
+  })
+);
+
+// ===== TODO ROUTES =====
+
 // Search todos
 app.post(
   "/api/todos/search",
+  authenticateToken,
   asyncHandler(async (req, res) => {
-    const criteria = req.body;
+    const criteria = { ...req.body, userId: req.user.id };
     const result = await todoService.searchTodos(criteria);
     res.json(result);
   })
@@ -24,12 +134,22 @@ app.post(
 // GET todo by ID
 app.get(
   "/api/todos/:id",
+  authenticateToken,
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const result = await todoService.getTodo(id);
+    const userId = req.user.id;
+    const result = await todoService.getTodo(id, userId);
 
     if (result.success === false) {
       return res.status(404).json(result);
+    }
+
+    // Verify the todo belongs to the authenticated user
+    if (result.userId && result.userId != userId) {
+      return res.status(403).json({
+        success: false,
+        error: "You don't have permission to access this todo",
+      });
     }
 
     res.json(result);
@@ -39,8 +159,10 @@ app.get(
 // GET all todos
 app.get(
   "/api/todos",
+  authenticateToken,
   asyncHandler(async (req, res) => {
-    const result = await todoService.listTodos();
+    const userId = req.user.id;
+    const result = await todoService.listTodos(userId);
     res.json(result);
   })
 );
@@ -48,6 +170,7 @@ app.get(
 // CREATE new todo
 app.post(
   "/api/todos",
+  authenticateToken,
   asyncHandler(async (req, res) => {
     const todoData = req.body;
 
@@ -67,6 +190,12 @@ app.post(
       todoData.estimatedTime = 0;
     }
 
+    // Associate the todo with the authenticated user - ENSURE NUMERIC FORMAT
+    todoData.userId = parseInt(req.user.id, 10);
+
+    // Debug output
+    console.log(`Creating todo with userId: ${todoData.userId}`);
+
     const result = await todoService.createTodo(todoData);
 
     if (result.success === false) {
@@ -80,9 +209,26 @@ app.post(
 // UPDATE todo
 app.put(
   "/api/todos/:id",
+  authenticateToken,
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const todoData = { ...req.body, id };
+    const userId = req.user.id;
+
+    // First check if the todo exists and belongs to the user
+    const existingTodo = await todoService.getTodo(id, userId);
+
+    if (existingTodo.success === false) {
+      return res.status(404).json(existingTodo);
+    }
+
+    if (existingTodo.userId && existingTodo.userId != userId) {
+      return res.status(403).json({
+        success: false,
+        error: "You don't have permission to update this todo",
+      });
+    }
+
+    const todoData = { ...req.body, id, userId };
 
     const result = await todoService.updateTodo(todoData);
 
@@ -97,9 +243,26 @@ app.put(
 // DELETE todo
 app.delete(
   "/api/todos/:id",
+  authenticateToken,
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const result = await todoService.deleteTodo(id);
+    const userId = req.user.id;
+
+    // First check if the todo exists and belongs to the user
+    const existingTodo = await todoService.getTodo(id, userId);
+
+    if (existingTodo.success === false) {
+      return res.status(404).json(existingTodo);
+    }
+
+    if (existingTodo.userId && existingTodo.userId != userId) {
+      return res.status(403).json({
+        success: false,
+        error: "You don't have permission to delete this todo",
+      });
+    }
+
+    const result = await todoService.deleteTodo(id, userId);
 
     if (result.success === false) {
       return res.status(404).json(result);

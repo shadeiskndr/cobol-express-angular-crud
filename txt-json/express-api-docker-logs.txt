@@ -1,0 +1,13 @@
+2025-04-11 00:15:20 Todo List API server running on port 3000
+2025-04-11 00:15:23 Connected to COBOL backend for user operation
+2025-04-11 00:15:26 Connected to COBOL backend for user operation
+2025-04-11 00:15:28 Connected to COBOL backend for user operation
+2025-04-11 00:15:30 Creating todo with userId: 10211
+2025-04-11 00:15:30 Connected to COBOL backend
+2025-04-11 00:15:32 Connected to COBOL backend
+2025-04-11 00:15:34 Connected to COBOL backend
+2025-04-11 00:15:36 Connected to COBOL backend
+2025-04-11 00:15:36 Connected to COBOL backend
+2025-04-11 00:15:38 Connected to COBOL backend
+2025-04-11 00:15:40 Connected to COBOL backend
+2025-04-11 00:15:40 Connected to COBOL backend
