@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["node", "customer-api.js"]
+CMD ["node", "todo-api.js"]

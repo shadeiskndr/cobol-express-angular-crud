@@ -10,8 +10,8 @@ RUN apk update && apk add --no-cache \
     npm
 
 # Copy COBOL program and compile it
-COPY customer-database.cbl .
-RUN cobc -x -free -o customer-database customer-database.cbl
+COPY todo-list.cbl .
+RUN cobc -x -free -o todo-list todo-list.cbl
 
 # Copy server code
 COPY server.js .

@@ -2,7 +2,7 @@ const net = require("net");
 const fs = require("fs");
 const path = require("path");
 
-class CustomerDatabaseService {
+class TodoListService {
   constructor() {}
 
   async executeOperation(operation, data = {}) {
@@ -51,34 +51,30 @@ class CustomerDatabaseService {
     });
   }
 
-  async getCustomer(id) {
+  async getTodo(id) {
     return this.executeOperation("GET", { id });
   }
 
-  async createCustomer(customerData) {
-    return this.executeOperation("CREATE", customerData);
+  async createTodo(todoData) {
+    return this.executeOperation("CREATE", todoData);
   }
 
-  async updateCustomer(customerData) {
-    return this.executeOperation("UPDATE", customerData);
+  async updateTodo(todoData) {
+    return this.executeOperation("UPDATE", todoData);
   }
 
-  async deleteCustomer(id) {
+  async deleteTodo(id) {
     return this.executeOperation("DELETE", { id });
   }
 
-  async listCustomers() {
+  async listTodos() {
     return this.executeOperation("LIST");
   }
 
   // Advanced features
-  async searchCustomers(criteria) {
+  async searchTodos(criteria) {
     return this.executeOperation("SEARCH", criteria);
-  }
-
-  async getCustomerTransactions(id) {
-    return this.executeOperation("TRANSACTIONS", { id });
   }
 }
 
-module.exports = new CustomerDatabaseService();
+module.exports = new TodoListService();

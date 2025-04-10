@@ -4,7 +4,7 @@ const fs = require("fs");
 
 // Configuration
 const PORT = 8080;
-const COBOL_PROGRAM = "/app/customer-database";
+const COBOL_PROGRAM = "/app/todo-list";
 
 // Create server
 const server = net.createServer((socket) => {

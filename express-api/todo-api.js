@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const customerDB = require("./db-middleware");
+const todoService = require("./db-middleware");
 
 const app = express();
 app.use(bodyParser.json());
@@ -11,12 +11,22 @@ app.use(cors());
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
-// GET customer by ID
+// Search todos
+app.post(
+  "/api/todos/search",
+  asyncHandler(async (req, res) => {
+    const criteria = req.body;
+    const result = await todoService.searchTodos(criteria);
+    res.json(result);
+  })
+);
+
+// GET todo by ID
 app.get(
-  "/api/customers/:id",
+  "/api/todos/:id",
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const result = await customerDB.getCustomer(id);
+    const result = await todoService.getTodo(id);
 
     if (result.success === false) {
       return res.status(404).json(result);
@@ -26,29 +36,38 @@ app.get(
   })
 );
 
-// GET all customers
+// GET all todos
 app.get(
-  "/api/customers",
+  "/api/todos",
   asyncHandler(async (req, res) => {
-    const result = await customerDB.listCustomers();
+    const result = await todoService.listTodos();
     res.json(result);
   })
 );
 
-// CREATE new customer
+// CREATE new todo
 app.post(
-  "/api/customers",
+  "/api/todos",
   asyncHandler(async (req, res) => {
-    const customerData = req.body;
+    const todoData = req.body;
 
-    if (!customerData.id || !customerData.name || !customerData.email) {
+    if (!todoData.id || !todoData.description) {
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: id, name, email",
+        error: "Missing required fields: id, description",
       });
     }
 
-    const result = await customerDB.createCustomer(customerData);
+    // Set default values if not provided
+    if (!todoData.status) {
+      todoData.status = "PENDING";
+    }
+
+    if (!todoData.estimatedTime) {
+      todoData.estimatedTime = 0;
+    }
+
+    const result = await todoService.createTodo(todoData);
 
     if (result.success === false) {
       return res.status(400).json(result);
@@ -58,14 +77,14 @@ app.post(
   })
 );
 
-// UPDATE customer
+// UPDATE todo
 app.put(
-  "/api/customers/:id",
+  "/api/todos/:id",
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const customerData = { ...req.body, id };
+    const todoData = { ...req.body, id };
 
-    const result = await customerDB.updateCustomer(customerData);
+    const result = await todoService.updateTodo(todoData);
 
     if (result.success === false) {
       return res.status(404).json(result);
@@ -75,37 +94,12 @@ app.put(
   })
 );
 
-// DELETE customer
+// DELETE todo
 app.delete(
-  "/api/customers/:id",
+  "/api/todos/:id",
   asyncHandler(async (req, res) => {
     const id = req.params.id;
-    const result = await customerDB.deleteCustomer(id);
-
-    if (result.success === false) {
-      return res.status(404).json(result);
-    }
-
-    res.json(result);
-  })
-);
-
-// Search customers (advanced feature)
-app.post(
-  "/api/customers/search",
-  asyncHandler(async (req, res) => {
-    const criteria = req.body;
-    const result = await customerDB.searchCustomers(criteria);
-    res.json(result);
-  })
-);
-
-// Get customer transactions (advanced feature)
-app.get(
-  "/api/customers/:id/transactions",
-  asyncHandler(async (req, res) => {
-    const id = req.params.id;
-    const result = await customerDB.getCustomerTransactions(id);
+    const result = await todoService.deleteTodo(id);
 
     if (result.success === false) {
       return res.status(404).json(result);
@@ -130,5 +124,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Todo List API server running on port ${PORT}`);
 });

@@ -6,9 +6,6 @@ services:
       context: ./cobol-backend
       dockerfile: Dockerfile
     volumes:
-      - ./cobol-backend/customer-database.cbl:/app/customer-database.cbl
-      - ./cobol-backend/entrypoint.sh:/app/entrypoint.sh
-      - ./cobol-backend/server.js:/app/server.js
       - cobol-data:/app/data
     ports:
       - "8080:8080"
@@ -22,9 +19,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    volumes:
-      - ./express-api:/app
-      - /app/node_modules
     depends_on:
       - cobol-backend
     networks:

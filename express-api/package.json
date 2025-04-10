@@ -2,10 +2,10 @@
   "name": "cobol-express-api",
   "version": "1.0.0",
   "description": "Express API middleware for COBOL backend",
-  "main": "customer-api.js",
+  "main": "todo-api.js",
   "scripts": {
-    "start": "node customer-api.js",
-    "dev": "nodemon customer-api.js"
+    "start": "node todo-api.js",
+    "dev": "nodemon todo-api.js"
   },
   "dependencies": {
     "express": "^4.17.1",

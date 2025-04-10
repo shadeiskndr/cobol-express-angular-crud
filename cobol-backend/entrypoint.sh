@@ -2,17 +2,16 @@
 set -e
 
 # Set environment variables for data file location
-export DD_CUSTOMER_FILE=/app/data/customers.dat
-export DD_TRANSACTION_FILE=/app/data/transactions.dat
+export DD_TODO_FILE=/app/data/todos.dat
 
 # Verify COBOL executable exists
-if [ ! -f /app/customer-database ]; then
+if [ ! -f /app/todo-list ]; then
   echo "COBOL executable not found, recompiling..."
-  cobc -x -free -o customer-database customer-database.cbl
+  cobc -x -free -o todo-list todo-list.cbl
 fi
 
 # Make sure it's executable
-chmod +x /app/customer-database
+chmod +x /app/todo-list
 
 # Start the Node.js socket server
 echo "Starting COBOL Backend server..."
