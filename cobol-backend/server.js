@@ -4,7 +4,8 @@ const fs = require("fs");
 
 // Configuration
 const PORT = 8080;
-const COBOL_PROGRAM = "/app/todo-list";
+const COBOL_TODO_PROGRAM = "/app/todo-list";
+const COBOL_USER_PROGRAM = "/app/user-management";
 
 // Create server
 const server = net.createServer((socket) => {
@@ -23,8 +24,25 @@ const server = net.createServer((socket) => {
       console.log(`Received operation: ${payload.operation}`);
       console.log("Sending to COBOL:", JSON.stringify(payload));
 
+      // Determine which COBOL program to execute based on operation
+      let cobolProgram = COBOL_TODO_PROGRAM;
+
+      // User management operations
+      if (
+        [
+          "GET_USER",
+          "CREATE_USER",
+          "UPDATE_USER",
+          "DELETE_USER",
+          "LIST_USERS",
+          "LOGIN",
+        ].includes(payload.operation)
+      ) {
+        cobolProgram = COBOL_USER_PROGRAM;
+      }
+
       // Execute COBOL program with the payload
-      const cobolProcess = spawn(COBOL_PROGRAM, [], {
+      const cobolProcess = spawn(cobolProgram, [], {
         stdio: ["pipe", "pipe", "pipe"],
         cwd: "/app", // Set the working directory explicitly
       });

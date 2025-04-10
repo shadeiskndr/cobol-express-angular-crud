@@ -15,6 +15,7 @@
        FD TODO-FILE.
        01 TODO-RECORD.
           05 TF-TODO-ID             PIC 9(5).
+          05 TF-USER-ID             PIC 9(5).
           05 TF-DESCRIPTION         PIC X(100).
           05 TF-DUE-DATE            PIC X(10).
           05 TF-ESTIMATED-TIME      PIC 9(4).
@@ -31,6 +32,7 @@
        
        01 WS-TODO.
           05 WS-TODO-ID             PIC 9(5).
+          05 WS-USER-ID             PIC 9(5).
           05 WS-DESCRIPTION         PIC X(100).
           05 WS-DUE-DATE            PIC X(10).
           05 WS-ESTIMATED-TIME      PIC 9(4).
@@ -198,6 +200,37 @@
        EXTRACT-TODO-DATA.
            MOVE SPACES TO WS-TODO
            MOVE WS-ID TO WS-TODO-ID
+
+           *> Extract user ID field
+           PERFORM VARYING WS-JSON-PARSING-IDX FROM 1 BY 1
+               UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
+               OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:11) = '"userId":"'
+               OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:10) = '"userId":'
+               CONTINUE
+           END-PERFORM
+
+           IF WS-JSON-PARSING-IDX <= LENGTH OF WS-INPUT-BUFFER
+               IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:11) = '"userId":"'
+                   ADD 11 TO WS-JSON-PARSING-IDX
+               ELSE
+                   ADD 10 TO WS-JSON-PARSING-IDX
+               END-IF
+               
+               MOVE SPACES TO WS-TEMP
+               MOVE 0 TO WS-NUMERIC-TEMP
+               
+               PERFORM UNTIL WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP > LENGTH OF WS-INPUT-BUFFER
+                   OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP - 1:1) = '"'
+                   OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP - 1:1) = ','
+                   
+                   MOVE WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP - 1:1)
+                       TO WS-TEMP(WS-NUMERIC-TEMP:1)
+                   
+                   ADD 1 TO WS-NUMERIC-TEMP
+               END-PERFORM
+               
+               MOVE WS-TEMP TO WS-USER-ID
+           END-IF
            
            *> Extract description field
            PERFORM VARYING WS-JSON-PARSING-IDX FROM 1 BY 1
@@ -604,6 +637,43 @@
            MOVE 1 TO WS-SUCCESS-FLAG
            MOVE 0 TO WS-NUMERIC-TEMP *> Counter for records found
            
+           *> Extract user ID for filtering
+           PERFORM VARYING WS-JSON-PARSING-IDX FROM 1 BY 1
+               UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
+               OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:11) = '"userId":"'
+               OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:10) = '"userId":'
+               CONTINUE
+           END-PERFORM
+           
+           IF WS-JSON-PARSING-IDX <= LENGTH OF WS-INPUT-BUFFER
+               IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:11) = '"userId":"'
+                   ADD 11 TO WS-JSON-PARSING-IDX
+               ELSE
+                   ADD 10 TO WS-JSON-PARSING-IDX
+               END-IF
+               
+               MOVE SPACES TO WS-TEMP
+               MOVE 0 TO WS-NUMERIC-TEMP
+               
+               PERFORM UNTIL WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP > LENGTH OF WS-INPUT-BUFFER
+                   OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP - 1:1) = '"'
+                   OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP - 1:1) = ','
+                   
+                   MOVE WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP - 1:1)
+                       TO WS-TEMP(WS-NUMERIC-TEMP:1)
+                   
+                   ADD 1 TO WS-NUMERIC-TEMP
+               END-PERFORM
+               
+               MOVE WS-TEMP TO WS-USER-ID
+           END-IF
+           
+           MOVE 1 TO WS-JSON-PARSING-IDX *> Reset pointer for response
+           STRING '{"todos":[' DELIMITED BY SIZE
+               INTO WS-RESPONSE
+               POINTER WS-JSON-PARSING-IDX *> Update pointer
+           END-STRING
+           
            MOVE LOW-VALUES TO TF-TODO-ID
            START TODO-FILE KEY >= TF-TODO-ID
                INVALID KEY
@@ -622,34 +692,39 @@
                    AT END
                        EXIT PERFORM
                    NOT AT END
-                       IF WS-NUMERIC-TEMP > 0 *> Add comma before second+ record
-                           STRING ',' DELIMITED BY SIZE
+                       *> Only include todos for the specified user
+                       IF WS-USER-ID = 0 OR TF-USER-ID = WS-USER-ID
+                           IF WS-NUMERIC-TEMP > 0 *> Add comma before second+ record
+                               STRING ',' DELIMITED BY SIZE
+                                   INTO WS-RESPONSE
+                                   POINTER WS-JSON-PARSING-IDX
+                               END-STRING
+                           END-IF
+                           
+                           ADD 1 TO WS-NUMERIC-TEMP
+                           
+                           MOVE TF-ESTIMATED-TIME TO WS-FMT-ESTIMATED-TIME
+                           MOVE FUNCTION TRIM(WS-FMT-ESTIMATED-TIME) 
+                               TO WS-ESTIMATED-TIME-JSON
+                           
+                           STRING '{'                              DELIMITED BY SIZE
+                                  '"id":'                          DELIMITED BY SIZE
+                                  TF-TODO-ID                       DELIMITED BY SIZE
+                                  ',"userId":'                     DELIMITED BY SIZE
+                                  TF-USER-ID                       DELIMITED BY SIZE
+                                  ',"description":"'               DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-DESCRIPTION)    DELIMITED BY SIZE
+                                  '","dueDate":"'                  DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-DUE-DATE)       DELIMITED BY SIZE
+                                  '","estimatedTime":'             DELIMITED BY SIZE
+                                  FUNCTION TRIM(WS-ESTIMATED-TIME-JSON) DELIMITED BY SIZE
+                                  ',"status":"'                    DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-STATUS)         DELIMITED BY SIZE
+                                  '"}'                             DELIMITED BY SIZE
                                INTO WS-RESPONSE
-                               POINTER WS-JSON-PARSING-IDX
+                               POINTER WS-JSON-PARSING-IDX *> Update pointer after each record
                            END-STRING
                        END-IF
-                       
-                       ADD 1 TO WS-NUMERIC-TEMP
-                       
-                       MOVE TF-ESTIMATED-TIME TO WS-FMT-ESTIMATED-TIME
-                       MOVE FUNCTION TRIM(WS-FMT-ESTIMATED-TIME) 
-                           TO WS-ESTIMATED-TIME-JSON
-                       
-                       STRING '{'                              DELIMITED BY SIZE
-                              '"id":'                          DELIMITED BY SIZE
-                              TF-TODO-ID                       DELIMITED BY SIZE
-                              ',"description":"'               DELIMITED BY SIZE
-                              FUNCTION TRIM(TF-DESCRIPTION)    DELIMITED BY SIZE
-                              '","dueDate":"'                  DELIMITED BY SIZE
-                              FUNCTION TRIM(TF-DUE-DATE)       DELIMITED BY SIZE
-                              '","estimatedTime":'             DELIMITED BY SIZE
-                              FUNCTION TRIM(WS-ESTIMATED-TIME-JSON) DELIMITED BY SIZE
-                              ',"status":"'                    DELIMITED BY SIZE
-                              FUNCTION TRIM(TF-STATUS)         DELIMITED BY SIZE
-                              '"}'                             DELIMITED BY SIZE
-                           INTO WS-RESPONSE
-                           POINTER WS-JSON-PARSING-IDX *> Update pointer after each record
-                       END-STRING
                END-READ
            END-PERFORM
            
@@ -752,6 +827,8 @@
            
            STRING '{"id":' DELIMITED BY SIZE
                   TF-TODO-ID DELIMITED BY SIZE
+                  ',"userId":' DELIMITED BY SIZE
+                  TF-USER-ID DELIMITED BY SIZE
                   ',"description":"' DELIMITED BY SIZE
                   FUNCTION TRIM(TF-DESCRIPTION) DELIMITED BY SIZE
                   '","dueDate":"' DELIMITED BY SIZE

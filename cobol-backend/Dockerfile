@@ -9,9 +9,11 @@ RUN apk update && apk add --no-cache \
     nodejs \
     npm
 
-# Copy COBOL program and compile it
+# Copy COBOL programs and compile them
 COPY todo-list.cbl .
+COPY user-management.cbl .
 RUN cobc -x -free -o todo-list todo-list.cbl
+RUN cobc -x -free -o user-management user-management.cbl
 
 # Copy server code
 COPY server.js .
