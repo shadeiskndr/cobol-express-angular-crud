@@ -27,14 +27,52 @@ class TodoListService {
 
       client.on("close", () => {
         try {
-          const result = JSON.parse(responseData);
+          // First, check if the response contains debug output mixed with JSON
+          if (responseData.includes("DEBUG:")) {
+            console.log("Response contains debug output, cleaning...");
+            // Extract only the JSON part (assuming it's at the beginning or end)
+            const jsonMatch = responseData.match(/(\{.*\})/s);
+            if (jsonMatch) {
+              responseData = jsonMatch[0];
+            }
+          }
+
+          // Clean up numeric values with leading zeros before parsing
+          responseData = responseData
+            .replace(/"id":0+(\d+)/g, '"id":$1')
+            .replace(/"userId":0+(\d+)/g, '"userId":$1')
+            .replace(/"estimatedTime":0+(\d+)/g, '"estimatedTime":$1');
+
+          // Try to parse the JSON
+          let result;
+          try {
+            result = JSON.parse(responseData);
+          } catch (parseError) {
+            // If parsing fails, try to extract just the JSON part
+            const jsonMatch = responseData.match(/(\{.*\})/s);
+            if (jsonMatch) {
+              const extractedJson = jsonMatch[0]
+                .replace(/"id":0+(\d+)/g, '"id":$1')
+                .replace(/"userId":0+(\d+)/g, '"userId":$1')
+                .replace(/"estimatedTime":0+(\d+)/g, '"estimatedTime":$1');
+
+              result = JSON.parse(extractedJson);
+            } else {
+              throw parseError;
+            }
+          }
+
           resolve(result);
         } catch (err) {
-          reject(
-            new Error(
-              `Failed to parse COBOL output: ${err.message}. Raw output: ${responseData}`
-            )
+          console.error(
+            `Failed to parse COBOL output: ${err.message}. Raw output: ${responseData}`
           );
+          // Return a structured error object instead of throwing
+          resolve({
+            success: false,
+            error: `Failed to parse COBOL output: ${err.message}`,
+            rawOutput: responseData.substring(0, 200), // Include part of the raw output for debugging
+          });
         }
       });
 

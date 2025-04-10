@@ -7,23 +7,22 @@ RUN apk update && apk add --no-cache \
     procps \
     netcat-openbsd \
     nodejs \
-    npm
+    npm \
+    dos2unix
 
-# Copy COBOL programs and compile them
-COPY todo-list.cbl .
-COPY user-management.cbl .
-RUN cobc -x -free -o todo-list todo-list.cbl
-RUN cobc -x -free -o user-management user-management.cbl
+# Copy COBOL program
+COPY combined-program.cbl .
+RUN cobc -x -free -o combined-program combined-program.cbl
 
 # Copy server code
 COPY server.js .
 
+# Copy and fix entrypoint script
+COPY entrypoint.sh .
+RUN dos2unix entrypoint.sh && chmod +x entrypoint.sh
+
 # Create data directory
 RUN mkdir -p /app/data
-
-# Copy and make entrypoint executable
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
 
 # Expose port for socket communication
 EXPOSE 8080

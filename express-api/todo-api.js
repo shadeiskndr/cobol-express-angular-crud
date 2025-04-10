@@ -190,8 +190,11 @@ app.post(
       todoData.estimatedTime = 0;
     }
 
-    // Associate the todo with the authenticated user
-    todoData.userId = req.user.id;
+    // Associate the todo with the authenticated user - ENSURE NUMERIC FORMAT
+    todoData.userId = parseInt(req.user.id, 10);
+
+    // Debug output
+    console.log(`Creating todo with userId: ${todoData.userId}`);
 
     const result = await todoService.createTodo(todoData);
 

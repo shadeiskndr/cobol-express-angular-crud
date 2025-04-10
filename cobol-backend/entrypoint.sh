@@ -5,20 +5,17 @@ set -e
 export DD_TODO_FILE=/app/data/todos.dat
 export DD_USER_FILE=/app/data/users.dat
 
-# Verify COBOL executables exist
-if [ ! -f /app/todo-list ]; then
-  echo "COBOL todo-list executable not found, recompiling..."
-  cobc -x -free -o todo-list todo-list.cbl
+# Verify COBOL executable exists
+if [ ! -f /app/combined-program ]; then
+  echo "COBOL program executable not found, compiling..."
+  cobc -x -free -o combined-program combined-program.cbl
 fi
 
-if [ ! -f /app/user-management ]; then
-  echo "COBOL user-management executable not found, recompiling..."
-  cobc -x -free -o user-management user-management.cbl
-fi
+# Make sure it's executable
+chmod +x /app/combined-program
 
-# Make sure they're executable
-chmod +x /app/todo-list
-chmod +x /app/user-management
+mkdir -p /app/data
+chmod -R 777 /app/data
 
 # Start the Node.js socket server
 echo "Starting COBOL Backend server..."

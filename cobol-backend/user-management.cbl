@@ -55,6 +55,7 @@
        01 WS-SUCCESS-FLAG           PIC 9 VALUE 0.
        
        PROCEDURE DIVISION.
+      *> cobol-lint CL002 main-procedure
        MAIN-PROCEDURE.
            PERFORM INITIALIZE-PROGRAM
            PERFORM PROCESS-REQUEST
