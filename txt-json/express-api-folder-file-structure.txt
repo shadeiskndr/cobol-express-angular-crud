@@ -1,6 +1,7 @@
 express-api
+├── auth-middleware.js
 ├── db-middleware.js
 ├── Dockerfile
-├── node_modules
 ├── package.json
-└── todo-api.js
+├── todo-api.js
+└── user-middleware.js

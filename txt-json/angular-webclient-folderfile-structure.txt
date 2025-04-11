@@ -1,6 +1,9 @@
 angular-webclient
 ├── .editorconfig
-├── .gitignore
+├── .vscode
+│   ├── extensions.json
+│   ├── launch.json
+│   └── tasks.json
 ├── angular.json
 ├── dist
 │   └── angular-webclient
