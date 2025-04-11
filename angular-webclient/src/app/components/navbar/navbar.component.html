@@ -23,6 +23,12 @@
       <span>Logout</span>
     </button>
   </mat-menu>
+
+  <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme">
+    <mat-icon>{{
+      (themeService.darkMode$ | async) ? "light_mode" : "dark_mode"
+    }}</mat-icon>
+  </button>
   } @else {
   <button mat-button routerLink="/login">
     <mat-icon>login</mat-icon>
@@ -31,6 +37,11 @@
   <button mat-button routerLink="/register">
     <mat-icon>person_add</mat-icon>
     Register
+  </button>
+  <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme">
+    <mat-icon>{{
+      (themeService.darkMode$ | async) ? "light_mode" : "dark_mode"
+    }}</mat-icon>
   </button>
   }
 </mat-toolbar>
