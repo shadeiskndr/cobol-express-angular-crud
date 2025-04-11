@@ -1,0 +1,48 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>My Profile</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    @if (isLoading) {
+    <div class="loading-spinner">
+      <app-loading-spinner></app-loading-spinner>
+    </div>
+    } @else {
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Username</mat-label>
+        <input matInput formControlName="username" required />
+        @if (profileForm.get('username')?.invalid &&
+        profileForm.get('username')?.touched) {
+        <mat-error>
+          @if (profileForm.get('username')?.errors?.['required']) { Username is
+          required } @else if
+          (profileForm.get('username')?.errors?.['minlength']) { Username must
+          be at least 3 characters }
+        </mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="full-width">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" required />
+        @if (profileForm.get('email')?.invalid &&
+        profileForm.get('email')?.touched) {
+        <mat-error>Please enter a valid email</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="button-row">
+        <button
+          mat-raised-button
+          color="primary"
+          type="submit"
+          [disabled]="profileForm.invalid || isLoading"
+        >
+          Update Profile
+        </button>
+      </div>
+    </form>
+    }
+  </mat-card-content>
+</mat-card>
