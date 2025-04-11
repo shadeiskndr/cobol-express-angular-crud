@@ -4,6 +4,7 @@ import { RegisterComponent } from './components/register/register.component';
 import { TodoListComponent } from './components/todo-list/todo-list.component';
 import { TodoFormComponent } from './components/todo-form/todo-form.component';
 import { ProfileComponent } from './components/profile/profile.component';
+import { NotFoundComponent } from './components/not-found/not-found.component';
 import { authGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
@@ -18,5 +19,5 @@ export const routes: Routes = [
   },
   { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/todos', pathMatch: 'full' },
-  { path: '**', redirectTo: '/todos' },
+  { path: '**', component: NotFoundComponent },
 ];
