@@ -1,0 +1,86 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>My Todo List</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="actions-bar">
+      <button mat-raised-button color="primary" (click)="addNewTodo()">
+        <mat-icon>add</mat-icon> Add New Todo
+      </button>
+    </div>
+
+    @if (isLoading) {
+    <div class="loading-spinner">
+      <app-loading-spinner></app-loading-spinner>
+    </div>
+    } @else if (todos.length === 0) {
+    <div class="empty-state">
+      <p>No todos found. Create your first todo!</p>
+    </div>
+    } @else {
+    <table mat-table [dataSource]="todos" class="mat-elevation-z2 todo-table">
+      <!-- ID Column -->
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef>ID</th>
+        <td mat-cell *matCellDef="let todo">{{ todo.id }}</td>
+      </ng-container>
+
+      <!-- Description Column -->
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Description</th>
+        <td mat-cell *matCellDef="let todo">{{ todo.description }}</td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let todo">
+          <span class="status-chip" [ngClass]="getStatusClass(todo.status)">
+            {{ todo.status }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Due Date Column -->
+      <ng-container matColumnDef="dueDate">
+        <th mat-header-cell *matHeaderCellDef>Due Date</th>
+        <td mat-cell *matCellDef="let todo">
+          {{ todo.dueDate | date : "mediumDate" }}
+        </td>
+      </ng-container>
+
+      <!-- Estimated Time Column -->
+      <ng-container matColumnDef="estimatedTime">
+        <th mat-header-cell *matHeaderCellDef>Est. Time (min)</th>
+        <td mat-cell *matCellDef="let todo">{{ todo.estimatedTime || 0 }}</td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let todo">
+          <button
+            mat-icon-button
+            color="primary"
+            (click)="editTodo(todo.id)"
+            aria-label="Edit todo"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            color="warn"
+            (click)="deleteTodo(todo.id)"
+            aria-label="Delete todo"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+    }
+  </mat-card-content>
+</mat-card>

@@ -1,0 +1,42 @@
+.todo-table {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.actions-bar {
+  margin-bottom: 20px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 30px;
+}
+
+.status-chip {
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-completed {
+  background-color: #c8e6c9;
+  color: #2e7d32;
+}
+
+.status-in-progress {
+  background-color: #bbdefb;
+  color: #1565c0;
+}
+
+.status-pending {
+  background-color: #ffecb3;
+  color: #ff8f00;
+}
