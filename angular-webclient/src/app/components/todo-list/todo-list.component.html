@@ -3,6 +3,42 @@
     <mat-card-title>My Todo List</mat-card-title>
   </mat-card-header>
   <mat-card-content>
+    <!-- Add search form -->
+    <div class="search-container">
+      <form [formGroup]="searchForm" (ngSubmit)="searchTodos()">
+        <div class="search-fields">
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="">All</mat-option>
+              <mat-option value="PENDING">Pending</mat-option>
+              <mat-option value="IN_PROGRESS">In Progress</mat-option>
+              <mat-option value="COMPLETED">Completed</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Min Time (minutes)</mat-label>
+            <input matInput type="number" formControlName="minTime" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max Time (minutes)</mat-label>
+            <input matInput type="number" formControlName="maxTime" />
+          </mat-form-field>
+
+          <div class="search-buttons">
+            <button mat-raised-button color="primary" type="submit">
+              <mat-icon>search</mat-icon> Search
+            </button>
+            <button mat-button type="button" (click)="resetSearch()">
+              Reset
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
     <div class="actions-bar">
       <button mat-raised-button color="primary" (click)="addNewTodo()">
         <mat-icon>add</mat-icon> Add New Todo
@@ -19,6 +55,7 @@
     </div>
     } @else {
     <table mat-table [dataSource]="todos" class="mat-elevation-z2 todo-table">
+      <!-- Existing table content remains the same -->
       <!-- ID Column -->
       <ng-container matColumnDef="id">
         <th mat-header-cell *matHeaderCellDef>ID</th>

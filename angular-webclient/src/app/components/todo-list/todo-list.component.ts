@@ -7,7 +7,12 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TodoService } from '../../services/todo.service';
+import { AuthService } from '../../services/auth.service';
 import { Todo } from '../../models/todo';
 import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.component';
 import { DatePipe, NgClass } from '@angular/common';
@@ -25,6 +30,10 @@ import { DatePipe, NgClass } from '@angular/common';
     MatChipsModule,
     MatSnackBarModule,
     MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    ReactiveFormsModule,
     LoadingSpinnerComponent,
   ],
   templateUrl: './todo-list.component.html',
@@ -41,13 +50,30 @@ export class TodoListComponent implements OnInit {
     'actions',
   ];
   isLoading = false;
+  searchForm: FormGroup;
+  currentUserId: number | null = null;
 
   constructor(
     private todoService: TodoService,
+    private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
-  ) {}
+    private dialog: MatDialog,
+    private fb: FormBuilder
+  ) {
+    this.searchForm = this.fb.group({
+      status: [''],
+      minTime: [null],
+      maxTime: [null],
+    });
+
+    // Get current user from AuthService
+    this.authService.currentUser$.subscribe((user) => {
+      if (user) {
+        this.currentUserId = user.id;
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadTodos();
@@ -57,6 +83,7 @@ export class TodoListComponent implements OnInit {
     this.isLoading = true;
     this.todoService.getTodos().subscribe({
       next: (data) => {
+        // Filter todos by current user ID if needed
         this.todos = data;
         this.isLoading = false;
       },
@@ -69,6 +96,83 @@ export class TodoListComponent implements OnInit {
         this.isLoading = false;
       },
     });
+  }
+
+  searchTodos(): void {
+    const criteria = this.getSearchCriteria();
+    if (!this.hasValidSearchCriteria(criteria)) {
+      this.snackBar.open(
+        'Please provide at least one search criteria',
+        'Close',
+        {
+          duration: 3000,
+        }
+      );
+      return;
+    }
+
+    this.isLoading = true;
+    this.todoService.searchTodos(criteria).subscribe({
+      next: (data) => {
+        this.todos = data;
+        this.isLoading = false;
+        this.snackBar.open(
+          `Found ${data.length} todos matching your criteria`,
+          'Close',
+          {
+            duration: 3000,
+          }
+        );
+      },
+      error: (error) => {
+        this.snackBar.open(
+          'Error searching todos: ' + (error.error?.error || 'Unknown error'),
+          'Close',
+          { duration: 3000 }
+        );
+        this.isLoading = false;
+      },
+    });
+  }
+
+  resetSearch(): void {
+    this.searchForm.reset({
+      status: '',
+      minTime: null,
+      maxTime: null,
+    });
+    this.loadTodos();
+  }
+
+  private getSearchCriteria(): any {
+    const formValues = this.searchForm.value;
+    const criteria: any = {};
+
+    // Always include the current user ID in search criteria
+    if (this.currentUserId) {
+      criteria.userId = this.currentUserId;
+    }
+
+    if (formValues.status) {
+      criteria.status = formValues.status;
+    }
+
+    if (formValues.minTime !== null && formValues.minTime !== '') {
+      criteria.minTime = formValues.minTime;
+    }
+
+    if (formValues.maxTime !== null && formValues.maxTime !== '') {
+      criteria.maxTime = formValues.maxTime;
+    }
+
+    return criteria;
+  }
+
+  private hasValidSearchCriteria(criteria: any): boolean {
+    // We consider the search valid if there's at least one criterion besides userId
+    const criteriaWithoutUserId = { ...criteria };
+    delete criteriaWithoutUserId.userId;
+    return Object.keys(criteriaWithoutUserId).length > 0;
   }
 
   editTodo(id: number): void {
