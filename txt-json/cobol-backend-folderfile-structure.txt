@@ -1,6 +1,0 @@
-cobol-backend
-├── combined-program.cbl
-├── data
-├── Dockerfile
-├── entrypoint.sh
-└── server.js
