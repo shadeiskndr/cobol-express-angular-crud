@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Todo } from '../models/todo';
+import { Todo, TodoResponse } from '../models/todo';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +13,9 @@ export class TodoService {
   constructor(private http: HttpClient) {}
 
   getTodos(): Observable<Todo[]> {
-    return this.http.get<Todo[]>(this.apiUrl);
+    return this.http
+      .get<TodoResponse>(this.apiUrl)
+      .pipe(map((response) => response.todos));
   }
 
   getTodoById(id: number): Observable<Todo> {

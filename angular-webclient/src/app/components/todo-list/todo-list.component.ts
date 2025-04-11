@@ -5,8 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TodoService } from '../../services/todo.service';
 import { Todo } from '../../models/todo';
 import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.component';
@@ -23,6 +23,8 @@ import { DatePipe, NgClass } from '@angular/common';
     MatIconModule,
     MatCardModule,
     MatChipsModule,
+    MatSnackBarModule,
+    MatDialogModule,
     LoadingSpinnerComponent,
   ],
   templateUrl: './todo-list.component.html',
