@@ -1,0 +1,36 @@
+<mat-toolbar color="primary">
+  <span class="app-title">Todo App</span>
+
+  <span class="spacer"></span>
+
+  @if (currentUser) {
+  <button mat-button routerLink="/todos">
+    <mat-icon>list</mat-icon>
+    Todos
+  </button>
+
+  <button mat-button [matMenuTriggerFor]="userMenu">
+    <mat-icon>account_circle</mat-icon>
+    {{ currentUser.username }}
+  </button>
+  <mat-menu #userMenu="matMenu">
+    <button mat-menu-item routerLink="/profile">
+      <mat-icon>person</mat-icon>
+      <span>Profile</span>
+    </button>
+    <button mat-menu-item (click)="logout()">
+      <mat-icon>exit_to_app</mat-icon>
+      <span>Logout</span>
+    </button>
+  </mat-menu>
+  } @else {
+  <button mat-button routerLink="/login">
+    <mat-icon>login</mat-icon>
+    Login
+  </button>
+  <button mat-button routerLink="/register">
+    <mat-icon>person_add</mat-icon>
+    Register
+  </button>
+  }
+</mat-toolbar>
