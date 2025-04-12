@@ -148,11 +148,6 @@ export class TodoListComponent implements OnInit {
     const formValues = this.searchForm.value;
     const criteria: any = {};
 
-    // Always include the current user ID in search criteria
-    if (this.currentUserId) {
-      criteria.userId = this.currentUserId;
-    }
-
     if (formValues.status) {
       criteria.status = formValues.status;
     }
@@ -169,10 +164,8 @@ export class TodoListComponent implements OnInit {
   }
 
   private hasValidSearchCriteria(criteria: any): boolean {
-    // We consider the search valid if there's at least one criterion besides userId
-    const criteriaWithoutUserId = { ...criteria };
-    delete criteriaWithoutUserId.userId;
-    return Object.keys(criteriaWithoutUserId).length > 0;
+    // Simply check if there's at least one criterion
+    return Object.keys(criteria).length > 0;
   }
 
   editTodo(id: number): void {

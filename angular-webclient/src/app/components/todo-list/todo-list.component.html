@@ -7,7 +7,7 @@
     <div class="search-container">
       <form [formGroup]="searchForm" (ngSubmit)="searchTodos()">
         <div class="search-fields">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="fill">
             <mat-label>Status</mat-label>
             <mat-select formControlName="status">
               <mat-option value="">All</mat-option>
@@ -17,12 +17,12 @@
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="fill">
             <mat-label>Min Time (minutes)</mat-label>
             <input matInput type="number" formControlName="minTime" />
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="fill">
             <mat-label>Max Time (minutes)</mat-label>
             <input matInput type="number" formControlName="maxTime" />
           </mat-form-field>

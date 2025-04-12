@@ -35,6 +35,8 @@ export class TodoService {
   }
 
   searchTodos(criteria: any): Observable<Todo[]> {
-    return this.http.post<Todo[]>(`${this.apiUrl}/search`, criteria);
+    return this.http
+      .post<TodoResponse>(`${this.apiUrl}/search`, criteria)
+      .pipe(map((response) => response.todos));
   }
 }
