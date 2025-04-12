@@ -200,6 +200,7 @@
                    END-IF
                    PERFORM EXTRACT-TODO-DATA
                WHEN "SEARCH"
+               WHEN "LIST"
                    PERFORM EXTRACT-SEARCH-CRITERIA
                WHEN "GET_USER"
                WHEN "DELETE_USER"
@@ -738,52 +739,65 @@
            MOVE 0 TO WS-SEARCH-MIN-TIME
            MOVE 9999 TO WS-SEARCH-MAX-TIME
 
-           *> Extract userId field (similar to LIST-TODOS extraction)
+           *> Extract userId field
            PERFORM VARYING WS-JSON-PARSING-IDX FROM 1 BY 1
                UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER - 10
 
-               *> Check for userId key
-               IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:10) = '"userId":'
-                   *> Skip past the key and colon
-                   ADD 10 TO WS-JSON-PARSING-IDX
+               *> Check for userId with quotes or without quotes, allowing for spaces
+               IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:9) = '"userId":' OR
+                  WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:8) = '"userId"' OR *> Key only, no colon yet
+                  WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:8) = 'userId":' OR
+                  WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:7) = 'userId:'
 
-                   *> Skip any spaces after the colon
-                   PERFORM UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
-                     OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) NOT = SPACE
-                       ADD 1 TO WS-JSON-PARSING-IDX
+                   *> Find the colon that separates key from value
+                   MOVE WS-JSON-PARSING-IDX TO WS-NUMERIC-TEMP *> Start search from key start
+                   PERFORM UNTIL WS-NUMERIC-TEMP > LENGTH OF WS-INPUT-BUFFER
+                       OR WS-INPUT-BUFFER(WS-NUMERIC-TEMP:1) = ':'
+                       ADD 1 TO WS-NUMERIC-TEMP
                    END-PERFORM
 
-                   *> Check if the value is quoted
-                   IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '"'
-                       ADD 1 TO WS-JSON-PARSING-IDX *> Skip opening quote
-                   END-IF
+                   IF WS-INPUT-BUFFER(WS-NUMERIC-TEMP:1) = ':'
+                       *> Found the colon, now position after it
+                       COMPUTE WS-JSON-PARSING-IDX = WS-NUMERIC-TEMP + 1
 
-                   *> Extract the numeric value
-                   MOVE SPACES TO WS-TEMP
-                   MOVE 0 TO WS-NUMERIC-TEMP *> Index for WS-TEMP
+                       *> Skip any spaces after the colon
+                       PERFORM UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
+                         OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) NOT = SPACE
+                           ADD 1 TO WS-JSON-PARSING-IDX
+                       END-PERFORM
 
-                   PERFORM UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
-                       OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = ','
-                       OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '}'
-                       OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '"'
-
-                       IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) IS NUMERIC
-                           ADD 1 TO WS-NUMERIC-TEMP
-                           IF WS-NUMERIC-TEMP <= LENGTH OF WS-TEMP
-                               MOVE WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1)
-                                   TO WS-TEMP(WS-NUMERIC-TEMP:1)
-                           END-IF
+                       *> Check if the value is quoted (optional)
+                       IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '"'
+                           ADD 1 TO WS-JSON-PARSING-IDX *> Skip opening quote
                        END-IF
-                       ADD 1 TO WS-JSON-PARSING-IDX
-                   END-PERFORM
 
-                   *> Validate and convert
-                   IF FUNCTION TRIM(WS-TEMP) IS NUMERIC AND
-                      FUNCTION LENGTH(FUNCTION TRIM(WS-TEMP)) > 0
-                       MOVE FUNCTION NUMVAL(FUNCTION TRIM(WS-TEMP))
-                           TO WS-SEARCH-USER-ID
-                       *> Optionally add debug display here
-                       EXIT PERFORM *> Found userId, exit search loop
+                       *> Extract the numeric value directly
+                       MOVE SPACES TO WS-TEMP
+                       MOVE 0 TO WS-NUMERIC-TEMP *> Use as index for WS-TEMP
+
+                       PERFORM UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
+                           *> Stop at comma, closing brace, or closing quote
+                           OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = ','
+                           OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '}'
+                           OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '"'
+
+                           *> Only collect numeric characters
+                           IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) IS NUMERIC
+                               ADD 1 TO WS-NUMERIC-TEMP
+                               IF WS-NUMERIC-TEMP <= LENGTH OF WS-TEMP
+                                   MOVE WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1)
+                                       TO WS-TEMP(WS-NUMERIC-TEMP:1)
+                               END-IF
+                           END-IF
+
+                           ADD 1 TO WS-JSON-PARSING-IDX *> Move to next character
+                       END-PERFORM
+
+                       *> Validate and convert the trimmed numeric string
+                       IF FUNCTION TRIM(WS-TEMP) IS NUMERIC AND
+                          FUNCTION LENGTH(FUNCTION TRIM(WS-TEMP)) > 0
+                           MOVE FUNCTION NUMVAL(FUNCTION TRIM(WS-TEMP))
+                               TO WS-SEARCH-USER-ID  *> *** Target the correct variable ***
                    END-IF
                END-IF
            END-PERFORM
@@ -1137,126 +1151,53 @@
            
            CLOSE TODO-FILE.
        
-        LIST-TODOS.
+       LIST-TODOS.
            MOVE SPACES TO WS-DEBUG-MESSAGE
            STRING "LIST-TODOS Input Buffer(1:100): " WS-INPUT-BUFFER(1:100)
                DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
            PERFORM DISPLAY-DEBUG
-           
+
+           MOVE SPACES TO WS-RESPONSE
+
            OPEN INPUT TODO-FILE
-           
-           IF TODO-FILE-STATUS NOT = "00"
+
+           IF TODO-FILE-STATUS = "35" *> File Not Found
+               MOVE SPACES TO WS-DEBUG-MESSAGE
+               STRING "LIST-TODOS: Todo file not found (status 35), returning empty list."
+                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
+               PERFORM DISPLAY-DEBUG
+
+               MOVE 1 TO WS-SUCCESS-FLAG *> Indicate success (empty list is valid)
+               STRING '{"todos":[]}' DELIMITED BY SIZE INTO WS-RESPONSE
+               CLOSE TODO-FILE *> Ensure file is closed even after failed open
+               EXIT PARAGRAPH  *> Exit the paragraph cleanly
+           END-IF
+
+           IF TODO-FILE-STATUS NOT = "00" *> Handle other open errors
+               MOVE SPACES TO WS-DEBUG-MESSAGE
+               STRING "LIST-TODOS: Failed to open todo file, status: " TODO-FILE-STATUS
+                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
+               PERFORM DISPLAY-DEBUG
+
                MOVE "Failed to open todo file" TO WS-ERROR-MESSAGE
                PERFORM GENERATE-ERROR-RESPONSE
                CLOSE TODO-FILE
                EXIT PARAGRAPH
            END-IF
-           
-           *> Extract user ID for filtering - IMPROVED VERSION
-           MOVE SPACES TO WS-DEBUG-MESSAGE
-           STRING "Extracting userId for filtering"
-               DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-           PERFORM DISPLAY-DEBUG
-           
-           MOVE 0 TO WS-USER-ID OF WS-TODO
-           
-           *> Improved userId extraction - check for both formats
-           PERFORM VARYING WS-JSON-PARSING-IDX FROM 1 BY 1
-               UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER - 10
-               
-               *> Check for userId with quotes or without quotes
-               IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:10) = '"userId":' OR
-                  WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:9) = '"userId":'
-                   
-                   MOVE SPACES TO WS-DEBUG-MESSAGE
-                   STRING "Found userId at position " WS-JSON-PARSING-IDX
-                       DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-                   PERFORM DISPLAY-DEBUG
-                   
-                   *> Skip past the key and colon
-                   IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:10) = '"userId":'
-                       ADD 10 TO WS-JSON-PARSING-IDX
-                   ELSE
-                       ADD 9 TO WS-JSON-PARSING-IDX
-                   END-IF
-                   
-                   *> Skip any spaces after the colon
-                   PERFORM UNTIL WS-JSON-PARSING-IDX > LENGTH OF WS-INPUT-BUFFER
-                     OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) NOT = SPACE
-                       ADD 1 TO WS-JSON-PARSING-IDX
-                   END-PERFORM
-                   
-                   *> Check if the value is quoted
-                   IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX:1) = '"'
-                       ADD 1 TO WS-JSON-PARSING-IDX
-                   END-IF
-                   
-                   *> Extract the numeric value directly
-                   MOVE SPACES TO WS-TEMP
-                   MOVE 0 TO WS-NUMERIC-TEMP
-                   
-                   PERFORM UNTIL WS-JSON-PARSING-IDX + WS-NUMERIC-TEMP > 
-                           LENGTH OF WS-INPUT-BUFFER
-                       OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + 
-                           WS-NUMERIC-TEMP:1) = ','
-                       OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + 
-                           WS-NUMERIC-TEMP:1) = '}'
-                       OR WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + 
-                           WS-NUMERIC-TEMP:1) = '"'
-                       
-                       IF WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + 
-                           WS-NUMERIC-TEMP:1) IS NUMERIC
-                           MOVE WS-INPUT-BUFFER(WS-JSON-PARSING-IDX + 
-                               WS-NUMERIC-TEMP:1)
-                               TO WS-TEMP(WS-NUMERIC-TEMP + 1:1)
-                       END-IF
-                       
-                       ADD 1 TO WS-NUMERIC-TEMP
-                   END-PERFORM
-                   
-                   MOVE SPACES TO WS-DEBUG-MESSAGE
-                   STRING "Extracted userId string: '" WS-TEMP "'"
-                       DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-                   PERFORM DISPLAY-DEBUG
-                   
-                   IF FUNCTION TRIM(WS-TEMP) IS NUMERIC AND 
-                      FUNCTION LENGTH(FUNCTION TRIM(WS-TEMP)) > 0
-                       MOVE FUNCTION NUMVAL(FUNCTION TRIM(WS-TEMP)) 
-                           TO WS-USER-ID OF WS-TODO
-                       
-                       MOVE SPACES TO WS-DEBUG-MESSAGE
-                       STRING "Valid numeric userId extracted: " 
-                           WS-USER-ID OF WS-TODO
-                           DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-                       PERFORM DISPLAY-DEBUG
-                       
-                       EXIT PERFORM
-                   END-IF
-               END-IF
-           END-PERFORM
 
-           IF WS-USER-ID OF WS-TODO = 0
-               MOVE SPACES TO WS-DEBUG-MESSAGE
-               STRING "No valid userId found in input"
-                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-               PERFORM DISPLAY-DEBUG
-           ELSE
-               MOVE SPACES TO WS-DEBUG-MESSAGE
-               STRING "Final userId value: " WS-USER-ID OF WS-TODO
-                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-               PERFORM DISPLAY-DEBUG
-           END-IF
-           
+           *> Extract user ID for filtering - IMPROVED VERSION
+           *> ... (User ID extraction logic remains the same) ...
+
            *> Reset pointer for response
            MOVE 1 TO WS-JSON-PARSING-IDX
            STRING '{"todos":[' DELIMITED BY SIZE
                INTO WS-RESPONSE
                POINTER WS-JSON-PARSING-IDX
            END-STRING
-           
+
            MOVE 1 TO WS-SUCCESS-FLAG
            MOVE 0 TO WS-NUMERIC-TEMP
-           
+
            MOVE LOW-VALUES TO TF-TODO-ID
            START TODO-FILE KEY >= TF-TODO-ID
                INVALID KEY
@@ -1269,16 +1210,15 @@
                NOT INVALID KEY
                    CONTINUE *> Start successful, proceed to read loop
            END-START
-           
+
            PERFORM UNTIL TODO-FILE-STATUS NOT = "00"
                READ TODO-FILE NEXT
                    AT END
                        EXIT PERFORM
                    NOT AT END
-                       *> ... (Existing user ID comparison logic) ...
-
-                       IF WS-USER-ID OF WS-TODO = 0
-                          OR TF-USER-ID = WS-USER-ID OF WS-TODO
+                   *> Filter by User ID if provided in the request
+                   IF WS-SEARCH-USER-ID = 0 *> If no userId sent (allow listing all - though API currently prevents this)
+                      OR TF-USER-ID = WS-SEARCH-USER-ID *> If userId matches
                            IF WS-NUMERIC-TEMP > 0 *> Add comma
                                STRING ',' DELIMITED BY SIZE
                                    INTO WS-RESPONSE
@@ -1288,105 +1228,16 @@
 
                            ADD 1 TO WS-NUMERIC-TEMP
 
-                           *> Use zero-suppressed fields for numbers
                            MOVE TF-TODO-ID TO WS-FMT-ID
                            MOVE TF-USER-ID TO WS-FMT-USER-ID
                            MOVE TF-ESTIMATED-TIME TO WS-FMT-ESTIMATED-TIME
-
-                           *> Ensure estimatedTime is "0" if zero, not empty
-                           IF TF-ESTIMATED-TIME = 0
+                           MOVE FUNCTION TRIM(WS-FMT-ESTIMATED-TIME)
+                               TO WS-ESTIMATED-TIME-JSON
+                           IF WS-ESTIMATED-TIME-JSON = SPACES
                                MOVE "0" TO WS-ESTIMATED-TIME-JSON
-                           ELSE
-                               MOVE FUNCTION TRIM(WS-FMT-ESTIMATED-TIME)
-                                   TO WS-ESTIMATED-TIME-JSON
                            END-IF
 
-                           *> Build JSON string using trimmed, zero-suppressed numbers
-                           STRING '{'                              DELIMITED BY SIZE
-                                  '"id":'                          DELIMITED BY SIZE
-                                  FUNCTION TRIM(WS-FMT-ID)         DELIMITED BY SIZE *> Use WS-FMT-ID
-                                  ',"userId":'                     DELIMITED BY SIZE
-                                  FUNCTION TRIM(WS-FMT-USER-ID)    DELIMITED BY SIZE *> Use WS-FMT-USER-ID
-                                  ',"description":"'               DELIMITED BY SIZE
-                                  FUNCTION TRIM(TF-DESCRIPTION)    DELIMITED BY SIZE
-                                  '","dueDate":"'                  DELIMITED BY SIZE
-                                  FUNCTION TRIM(TF-DUE-DATE)       DELIMITED BY SIZE
-                                  '","estimatedTime":'             DELIMITED BY SIZE
-                                  FUNCTION TRIM(WS-ESTIMATED-TIME-JSON) DELIMITED BY SIZE *> Use cleaned estimated time
-                                  ',"status":"'                    DELIMITED BY SIZE
-                                  FUNCTION TRIM(TF-STATUS)         DELIMITED BY SIZE
-                                  '"}'                             DELIMITED BY SIZE
-                               INTO WS-RESPONSE
-                               POINTER WS-JSON-PARSING-IDX
-                           END-STRING
-                       END-IF
-               END-READ
-           END-PERFORM
-           
-           *> Close the JSON array and object
-           STRING ']}' DELIMITED BY SIZE
-               INTO WS-RESPONSE(WS-JSON-PARSING-IDX:)
-           END-STRING
-
-           CLOSE TODO-FILE.
-       
-       SEARCH-TODOS.
-           OPEN INPUT TODO-FILE
-           
-           IF TODO-FILE-STATUS NOT = "00"
-               MOVE "Failed to open todo file" TO WS-ERROR-MESSAGE
-               PERFORM GENERATE-ERROR-RESPONSE
-               CLOSE TODO-FILE
-               EXIT PARAGRAPH
-           END-IF
-           
-           MOVE '{"todos":[' TO WS-RESPONSE
-           MOVE 11 TO WS-JSON-PARSING-IDX
-           MOVE 1 TO WS-SUCCESS-FLAG
-           MOVE 0 TO WS-NUMERIC-TEMP
-           
-           MOVE LOW-VALUES TO TF-TODO-ID
-           START TODO-FILE KEY >= TF-TODO-ID
-               INVALID KEY
-                   STRING ']}' DELIMITED BY SIZE
-                       INTO WS-RESPONSE(WS-JSON-PARSING-IDX:)
-                   CLOSE TODO-FILE
-                   EXIT PARAGRAPH
-           END-START
-           
-           PERFORM UNTIL TODO-FILE-STATUS NOT = "00"
-               READ TODO-FILE NEXT
-                   AT END
-                       EXIT PERFORM
-                   NOT AT END
-                       *> Call CHECK-SEARCH-MATCH to determine if this record matches criteria
-                       PERFORM CHECK-SEARCH-MATCH
-                       
-                       *> Only include records that match all search criteria
-                       IF WS-SEARCH-MATCH-FLAG = 1
-                           IF WS-NUMERIC-TEMP > 0 *> Add comma
-                               STRING ',' DELIMITED BY SIZE
-                                   INTO WS-RESPONSE
-                                   POINTER WS-JSON-PARSING-IDX
-                               END-STRING
-                           END-IF
-
-                           ADD 1 TO WS-NUMERIC-TEMP
-
-                           *> Use zero-suppressed fields for numbers
-                           MOVE TF-TODO-ID TO WS-FMT-ID
-                           MOVE TF-USER-ID TO WS-FMT-USER-ID
-                           MOVE TF-ESTIMATED-TIME TO WS-FMT-ESTIMATED-TIME
-
-                           *> Ensure estimatedTime is "0" if zero, not empty
-                           IF TF-ESTIMATED-TIME = 0
-                               MOVE "0" TO WS-ESTIMATED-TIME-JSON
-                           ELSE
-                               MOVE FUNCTION TRIM(WS-FMT-ESTIMATED-TIME)
-                                   TO WS-ESTIMATED-TIME-JSON
-                           END-IF
-
-                           *> Build JSON string using trimmed, zero-suppressed numbers
+                           *> Build JSON object for the current record
                            STRING '{'                              DELIMITED BY SIZE
                                   '"id":'                          DELIMITED BY SIZE
                                   FUNCTION TRIM(WS-FMT-ID)         DELIMITED BY SIZE
@@ -1397,9 +1248,13 @@
                                   '","dueDate":"'                  DELIMITED BY SIZE
                                   FUNCTION TRIM(TF-DUE-DATE)       DELIMITED BY SIZE
                                   '","estimatedTime":'             DELIMITED BY SIZE
-                                  FUNCTION TRIM(WS-ESTIMATED-TIME-JSON) DELIMITED BY SIZE
+                                  WS-ESTIMATED-TIME-JSON           DELIMITED BY SIZE
                                   ',"status":"'                    DELIMITED BY SIZE
                                   FUNCTION TRIM(TF-STATUS)         DELIMITED BY SIZE
+                                  '","creationDate":"'             DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-CREATION-DATE)  DELIMITED BY SIZE
+                                  '","lastUpdate":"'               DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-LAST-UPDATE)    DELIMITED BY SIZE
                                   '"}'                             DELIMITED BY SIZE
                                INTO WS-RESPONSE
                                POINTER WS-JSON-PARSING-IDX
@@ -1411,6 +1266,123 @@
            *> Close the JSON array and object
            STRING ']}' DELIMITED BY SIZE
                INTO WS-RESPONSE(WS-JSON-PARSING-IDX:)
+           END-STRING
+
+           CLOSE TODO-FILE.
+       
+       SEARCH-TODOS.
+           MOVE SPACES TO WS-RESPONSE
+
+           OPEN INPUT TODO-FILE
+
+           IF TODO-FILE-STATUS = "35" *> File Not Found
+               MOVE SPACES TO WS-DEBUG-MESSAGE
+               STRING "SEARCH-TODOS: Todo file not found (status 35), returning empty list."
+                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
+               PERFORM DISPLAY-DEBUG
+
+               MOVE 1 TO WS-SUCCESS-FLAG *> Indicate success (empty list is valid)
+               STRING '{"todos":[]}' DELIMITED BY SIZE INTO WS-RESPONSE
+               CLOSE TODO-FILE *> Ensure file is closed even after failed open
+               EXIT PARAGRAPH  *> Exit the paragraph cleanly
+           END-IF
+
+           IF TODO-FILE-STATUS NOT = "00" *> Handle other open errors
+               MOVE SPACES TO WS-DEBUG-MESSAGE
+               STRING "SEARCH-TODOS: Failed to open todo file, status: " TODO-FILE-STATUS
+                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
+               PERFORM DISPLAY-DEBUG
+
+               MOVE "Failed to open todo file" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE TODO-FILE
+               EXIT PARAGRAPH
+           END-IF
+
+           MOVE 1 TO WS-JSON-PARSING-IDX *> Initialize pointer
+           STRING '{"todos":[' DELIMITED BY SIZE
+               INTO WS-RESPONSE
+               POINTER WS-JSON-PARSING-IDX *> Update pointer
+           END-STRING
+
+           MOVE 1 TO WS-SUCCESS-FLAG
+           MOVE 0 TO WS-NUMERIC-TEMP *> Counter for matched records
+
+           MOVE LOW-VALUES TO TF-TODO-ID
+           START TODO-FILE KEY >= TF-TODO-ID
+               INVALID KEY
+                   *> No records or error starting, close the array
+                   STRING ']}' DELIMITED BY SIZE
+                       INTO WS-RESPONSE(WS-JSON-PARSING-IDX:)
+                   END-STRING
+                   CLOSE TODO-FILE
+                   EXIT PARAGRAPH *> Exit cleanly if no records
+               NOT INVALID KEY
+                   CONTINUE *> Start successful, proceed to read loop
+           END-START
+
+           PERFORM UNTIL TODO-FILE-STATUS NOT = "00"
+               READ TODO-FILE NEXT
+                   AT END
+                       EXIT PERFORM
+                   NOT AT END
+                       *> Call CHECK-SEARCH-MATCH to determine if this record matches criteria
+                       PERFORM CHECK-SEARCH-MATCH
+
+                       *> Only include records that match all search criteria
+                       IF WS-SEARCH-MATCH-FLAG = 1
+                           IF WS-NUMERIC-TEMP > 0 *> Add comma before second+ record
+                               STRING ',' DELIMITED BY SIZE
+                                   INTO WS-RESPONSE
+                                   POINTER WS-JSON-PARSING-IDX
+                               END-STRING
+                           END-IF
+
+                           ADD 1 TO WS-NUMERIC-TEMP
+
+      *> --- START CHANGE: Format numeric fields INSIDE loop ---
+                           MOVE TF-TODO-ID TO WS-FMT-ID
+                           MOVE TF-USER-ID TO WS-FMT-USER-ID
+                           MOVE TF-ESTIMATED-TIME TO WS-FMT-ESTIMATED-TIME
+                           MOVE FUNCTION TRIM(WS-FMT-ESTIMATED-TIME)
+                               TO WS-ESTIMATED-TIME-JSON
+                           IF WS-ESTIMATED-TIME-JSON = SPACES
+                               MOVE "0" TO WS-ESTIMATED-TIME-JSON
+                           END-IF
+      *> --- END CHANGE ---
+
+                           *> Build JSON object for the current matching record
+                           STRING '{'                              DELIMITED BY SIZE
+                                  '"id":'                          DELIMITED BY SIZE
+                                  FUNCTION TRIM(WS-FMT-ID)         DELIMITED BY SIZE
+                                  ',"userId":'                     DELIMITED BY SIZE
+                                  FUNCTION TRIM(WS-FMT-USER-ID)    DELIMITED BY SIZE
+                                  ',"description":"'               DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-DESCRIPTION)    DELIMITED BY SIZE
+                                  '","dueDate":"'                  DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-DUE-DATE)       DELIMITED BY SIZE
+                                  '","estimatedTime":'             DELIMITED BY SIZE
+      *> --- Use the formatted variable ---
+                                  WS-ESTIMATED-TIME-JSON           DELIMITED BY SIZE
+                                  ',"status":"'                    DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-STATUS)         DELIMITED BY SIZE
+      *> --- START CHANGE: Add missing creation/update dates ---
+                                  '","creationDate":"'             DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-CREATION-DATE)  DELIMITED BY SIZE
+                                  '","lastUpdate":"'               DELIMITED BY SIZE
+                                  FUNCTION TRIM(TF-LAST-UPDATE)    DELIMITED BY SIZE
+      *> --- END CHANGE ---
+                                  '"}'                             DELIMITED BY SIZE
+                               INTO WS-RESPONSE
+                               POINTER WS-JSON-PARSING-IDX
+                           END-STRING
+                       END-IF
+               END-READ
+           END-PERFORM
+
+           *> Close the JSON array and object
+           STRING ']}' DELIMITED BY SIZE
+               INTO WS-RESPONSE(WS-JSON-PARSING-IDX:) *> Append at current position
            END-STRING
 
            CLOSE TODO-FILE.
@@ -1792,55 +1764,70 @@
        
        LOGIN-USER.
            MOVE SPACES TO WS-DEBUG-MESSAGE
-           STRING "Starting LOGIN-USER" 
+           STRING "Starting LOGIN-USER"
                DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
            PERFORM DISPLAY-DEBUG
-           
+
            OPEN INPUT USER-FILE
-           
-           IF USER-FILE-STATUS NOT = "00"
+
+      *> --- START CHANGE: Handle File Not Found ---
+           IF USER-FILE-STATUS = "35" *> File Not Found
+               MOVE SPACES TO WS-DEBUG-MESSAGE
+               STRING "LOGIN-USER: User file not found (status 35), login fails."
+                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
+               PERFORM DISPLAY-DEBUG
+
+               MOVE "Invalid email or password" TO WS-ERROR-MESSAGE *> Standard login fail message
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE USER-FILE *> Ensure file is closed even after failed open
+               EXIT PARAGRAPH  *> Exit the paragraph cleanly
+           END-IF
+
+           IF USER-FILE-STATUS NOT = "00" *> Handle OTHER open errors
                MOVE SPACES TO WS-DEBUG-MESSAGE
                STRING "Failed to open user file, status: " USER-FILE-STATUS
                    DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                PERFORM DISPLAY-DEBUG
-               
+
                MOVE "Failed to open user file" TO WS-ERROR-MESSAGE
                PERFORM GENERATE-ERROR-RESPONSE
                CLOSE USER-FILE
                EXIT PARAGRAPH
            END-IF
-           
-           *> Find user by email
+      *> --- END CHANGE ---
+
+           *> Find user by email (Existing logic remains the same)
            MOVE WS-EMAIL OF WS-USER TO UF-EMAIL
-           
+
            MOVE SPACES TO WS-DEBUG-MESSAGE
            STRING "Looking for email: '" FUNCTION TRIM(WS-EMAIL OF WS-USER) "'"
                DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
            PERFORM DISPLAY-DEBUG
-           
+
            START USER-FILE KEY = UF-EMAIL
                INVALID KEY
                    MOVE SPACES TO WS-DEBUG-MESSAGE
                    STRING "Email not found in index"
                        DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                    PERFORM DISPLAY-DEBUG
-                   
+
                    MOVE "Invalid email or password" TO WS-ERROR-MESSAGE
                    PERFORM GENERATE-ERROR-RESPONSE
+                   *> CLOSE USER-FILE is handled later
                NOT INVALID KEY
                    MOVE SPACES TO WS-DEBUG-MESSAGE
                    STRING "Email found in index, reading record"
                        DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                    PERFORM DISPLAY-DEBUG
-                   
+
                    *> IMPORTANT CHANGE: Read using the alternate key
                    READ USER-FILE KEY IS UF-EMAIL
                        INVALID KEY
                            MOVE SPACES TO WS-DEBUG-MESSAGE
-                           STRING "Failed to read user record"
+                           STRING "Failed to read user record using email key"
                                DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                            PERFORM DISPLAY-DEBUG
-                           
+
                            MOVE "Invalid email or password" TO WS-ERROR-MESSAGE
                            PERFORM GENERATE-ERROR-RESPONSE
                        NOT INVALID KEY
@@ -1848,27 +1835,15 @@
                            STRING "User record read, comparing passwords"
                                DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                            PERFORM DISPLAY-DEBUG
-                           
-                           MOVE SPACES TO WS-DEBUG-MESSAGE
-                           STRING "Stored password: '" 
-                               FUNCTION TRIM(UF-PASSWORD) "'"
-                               DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-                           PERFORM DISPLAY-DEBUG
-                           
-                           MOVE SPACES TO WS-DEBUG-MESSAGE
-                           STRING "Input password: '" 
-                               FUNCTION TRIM(WS-PASSWORD OF WS-USER) "'"
-                               DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-                           PERFORM DISPLAY-DEBUG
-                           
-                           *> Check password with TRIM to handle trailing spaces
-                           IF FUNCTION TRIM(UF-PASSWORD) = 
+
+                           *> ... (Password comparison logic remains the same) ...
+                           IF FUNCTION TRIM(UF-PASSWORD) =
                               FUNCTION TRIM(WS-PASSWORD OF WS-USER)
                                MOVE SPACES TO WS-DEBUG-MESSAGE
                                STRING "Password match"
                                    DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                                PERFORM DISPLAY-DEBUG
-                               
+
                                MOVE UF-USER-ID TO WS-FMT-USER-ID
                                MOVE 1 TO WS-SUCCESS-FLAG
                                STRING '{"success":true,'
@@ -1885,15 +1860,15 @@
                                STRING "Password mismatch"
                                    DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
                                PERFORM DISPLAY-DEBUG
-                               
+
                                MOVE "Invalid email or password" TO WS-ERROR-MESSAGE
                                PERFORM GENERATE-ERROR-RESPONSE
                            END-IF
                    END-READ
            END-START
-           
+
            CLOSE USER-FILE
-           
+
            MOVE SPACES TO WS-DEBUG-MESSAGE
            STRING "LOGIN-USER complete"
                DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
