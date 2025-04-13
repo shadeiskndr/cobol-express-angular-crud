@@ -9,13 +9,6 @@
     </div>
     } @else {
     <form [formGroup]="todoForm" (ngSubmit)="onSubmit()">
-      @if (!isEditMode) {
-      <mat-form-field appearance="fill" class="full-width">
-        <mat-label>ID</mat-label>
-        <input matInput type="number" formControlName="id" readonly />
-      </mat-form-field>
-      }
-
       <mat-form-field appearance="fill" class="full-width">
         <mat-label>Description</mat-label>
         <textarea

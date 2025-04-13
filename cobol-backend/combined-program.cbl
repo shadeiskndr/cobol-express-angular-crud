@@ -16,6 +16,11 @@
            RECORD KEY IS UF-USER-ID
            ALTERNATE RECORD KEY IS UF-EMAIL WITH DUPLICATES
            FILE STATUS IS USER-FILE-STATUS.
+
+           SELECT SEQUENCE-FILE ASSIGN TO EXTERNAL DD_SEQUENCE_FILE
+           ORGANIZATION IS LINE SEQUENTIAL
+           ACCESS MODE IS SEQUENTIAL
+           FILE STATUS IS SEQUENCE-FILE-STATUS.
        
        DATA DIVISION.
        FILE SECTION.
@@ -39,9 +44,14 @@
           05 UF-CREATION-DATE       PIC X(10).
           05 UF-LAST-UPDATE         PIC X(10).
        
+       FD SEQUENCE-FILE.
+       01 SEQUENCE-RECORD.
+          05 SF-NEXT-ID             PIC 9(5). *> Matches TF-TODO-ID size
+       
        WORKING-STORAGE SECTION.
        01 TODO-FILE-STATUS          PIC XX VALUE SPACES.
        01 USER-FILE-STATUS          PIC XX VALUE SPACES.
+       01 SEQUENCE-FILE-STATUS      PIC XX VALUE SPACES.
 
        01 WS-DEBUG-MESSAGE          PIC X(1000) VALUE SPACES.
        01 WS-INPUT-BUFFER           PIC X(20000).
@@ -191,8 +201,10 @@
                        EXIT PARAGRAPH
                    END-IF
                WHEN "CREATE"
+                   *> ID is now generated, don't extract it from input
+                   PERFORM EXTRACT-TODO-DATA
                WHEN "UPDATE"
-                   PERFORM EXTRACT-ID
+                   PERFORM EXTRACT-ID *> Still need ID for update
                    IF WS-ID = 0 OR WS-ID = SPACES
                        MOVE "Invalid ID parameter" TO WS-ERROR-MESSAGE
                        PERFORM GENERATE-ERROR-RESPONSE
@@ -317,7 +329,6 @@
 
        EXTRACT-TODO-DATA.
            MOVE SPACES TO WS-TODO
-           MOVE WS-ID TO WS-TODO-ID OF WS-TODO
 
            MOVE SPACES TO WS-DEBUG-MESSAGE
            STRING "Raw input buffer: " WS-INPUT-BUFFER(1:100)
@@ -970,84 +981,161 @@
            
            CLOSE TODO-FILE.
        
-       CREATE-TODO.
-            OPEN I-O TODO-FILE
-               
-           IF TODO-FILE-STATUS = "35"
-               CLOSE TODO-FILE
-               OPEN OUTPUT TODO-FILE
-               IF TODO-FILE-STATUS NOT = "00"
-                   MOVE "Failed to create todo file" TO WS-ERROR-MESSAGE
-                   PERFORM GENERATE-ERROR-RESPONSE
-                   EXIT PARAGRAPH
-               END-IF
-               CLOSE TODO-FILE
-               OPEN I-O TODO-FILE
-           END-IF
-           
-           IF TODO-FILE-STATUS NOT = "00"
-               MOVE "Failed to open todo file for I-O" TO WS-ERROR-MESSAGE
+    CREATE-TODO.
+       *> --- START: Revised ID Generation for LINE SEQUENTIAL ---
+       MOVE 0 TO WS-TODO-ID OF WS-TODO *> Initialize generated ID
+       MOVE 0 TO SF-NEXT-ID           *> Initialize sequence record field
+
+       *> Attempt to read the current sequence ID
+       OPEN INPUT SEQUENCE-FILE
+
+       IF SEQUENCE-FILE-STATUS = "35" *> File doesn't exist, create it
+           CLOSE SEQUENCE-FILE *> Close the failed INPUT attempt
+           OPEN OUTPUT SEQUENCE-FILE
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to create sequence file" TO WS-ERROR-MESSAGE
                PERFORM GENERATE-ERROR-RESPONSE
-               CLOSE TODO-FILE
+               CLOSE SEQUENCE-FILE *> Attempt to close
                EXIT PARAGRAPH
            END-IF
-           
-           MOVE WS-ID TO TF-TODO-ID
-           
-           READ TODO-FILE
-               INVALID KEY
-                   CONTINUE
-               NOT INVALID KEY
-                   MOVE "Todo ID already exists" TO WS-ERROR-MESSAGE
-                   PERFORM GENERATE-ERROR-RESPONSE
-                   CLOSE TODO-FILE
-                   EXIT PARAGRAPH
-           END-READ
-    
-           MOVE SPACES TO WS-DEBUG-MESSAGE
-           STRING "Creating todo with ID: " WS-TODO-ID OF WS-TODO
-               DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-           PERFORM DISPLAY-DEBUG
-           
-           MOVE SPACES TO WS-DEBUG-MESSAGE
-           STRING "User ID from request: " WS-USER-ID OF WS-TODO
-               DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-           PERFORM DISPLAY-DEBUG
-           
-           IF WS-USER-ID OF WS-TODO = SPACES OR WS-USER-ID OF WS-TODO = 0
-               MOVE SPACES TO WS-DEBUG-MESSAGE
-               STRING "WARNING - User ID is empty or zero"
-                   DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
-               PERFORM DISPLAY-DEBUG
+           MOVE 10001 TO SF-NEXT-ID *> Start IDs from 10001
+           MOVE SF-NEXT-ID TO WS-TODO-ID OF WS-TODO *> Use the first ID
+           WRITE SEQUENCE-RECORD
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to write initial sequence" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
            END-IF
-           
-           MOVE WS-TODO-ID OF WS-TODO TO TF-TODO-ID
-           MOVE WS-USER-ID OF WS-TODO TO TF-USER-ID
-           MOVE WS-DESCRIPTION OF WS-TODO TO TF-DESCRIPTION
-           MOVE WS-DUE-DATE OF WS-TODO TO TF-DUE-DATE
-           MOVE WS-ESTIMATED-TIME OF WS-TODO TO TF-ESTIMATED-TIME
-           MOVE WS-STATUS OF WS-TODO TO TF-STATUS
-           MOVE WS-CREATION-DATE OF WS-TODO TO TF-CREATION-DATE
-           MOVE WS-LAST-UPDATE OF WS-TODO TO TF-LAST-UPDATE
-            
-           WRITE TODO-RECORD
-               INVALID KEY
-                   MOVE "Failed to create new todo record" TO 
-                       WS-ERROR-MESSAGE
-                   PERFORM GENERATE-ERROR-RESPONSE
-               NOT INVALID KEY
-                   MOVE 1 TO WS-SUCCESS-FLAG
-                   MOVE WS-TODO-ID OF WS-TODO TO WS-FMT-ID
-                   
-                   STRING '{"success":true,"message":'
-                          '"Todo item created",'
-                          '"id":' DELIMITED BY SIZE
-                          FUNCTION TRIM(WS-FMT-ID) DELIMITED BY SIZE
-                          '}' DELIMITED BY SIZE
-                       INTO WS-RESPONSE
-           END-WRITE
-           
-           CLOSE TODO-FILE.
+           CLOSE SEQUENCE-FILE
+
+           *> Now, immediately write the *next* sequence number for the future
+           ADD 1 TO SF-NEXT-ID
+           OPEN OUTPUT SEQUENCE-FILE *> Reopen for OUTPUT to overwrite
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to reopen sequence file for next ID" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
+           END-IF
+           WRITE SEQUENCE-RECORD *> Write the incremented value (e.g., 10002)
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to write next sequence ID" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
+           END-IF
+           CLOSE SEQUENCE-FILE
+
+       ELSE *> File exists, read the current ID
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to open sequence file for input" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
+           END-IF
+
+           READ SEQUENCE-FILE *> Reads the single record (e.g., 10002)
+           IF SEQUENCE-FILE-STATUS NOT = "00" AND SEQUENCE-FILE-STATUS NOT = "10" *> Allow EOF just in case
+               MOVE "Failed to read sequence file" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
+           END-IF
+           CLOSE SEQUENCE-FILE
+
+           *> Assign the read ID to the new Todo
+           MOVE SF-NEXT-ID TO WS-TODO-ID OF WS-TODO
+
+           *> Increment the sequence ID for the next write
+           ADD 1 TO SF-NEXT-ID
+
+           *> Rewrite the updated sequence ID back to the file
+           OPEN OUTPUT SEQUENCE-FILE *> Open for OUTPUT (overwrites)
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to open sequence file for rewrite" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
+           END-IF
+           WRITE SEQUENCE-RECORD *> Write the incremented value (e.g., 10003)
+           IF SEQUENCE-FILE-STATUS NOT = "00"
+               MOVE "Failed to rewrite sequence file" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               CLOSE SEQUENCE-FILE
+               EXIT PARAGRAPH
+           END-IF
+           CLOSE SEQUENCE-FILE
+       END-IF
+       *> --- END: Revised ID Generation ---
+
+
+       *> Now proceed with writing the TODO record using the generated ID
+       OPEN I-O TODO-FILE
+
+       *> ... (Rest of the CREATE-TODO logic remains the same) ...
+       *> Check if TODO-FILE exists (Status 35), create if needed...
+       *> Check TODO-FILE open status...
+       *> MOVE generated WS-TODO-ID OF WS-TODO TO TF-TODO-ID
+       *> MOVE other WS-TODO fields to TF fields...
+       *> WRITE TODO-RECORD...
+       *> Generate success response using WS-TODO-ID OF WS-TODO...
+       *> CLOSE TODO-FILE...
+
+       IF TODO-FILE-STATUS = "35"
+           CLOSE TODO-FILE
+           OPEN OUTPUT TODO-FILE
+           IF TODO-FILE-STATUS NOT = "00"
+               MOVE "Failed to create todo file" TO WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+               EXIT PARAGRAPH
+           END-IF
+           CLOSE TODO-FILE
+           OPEN I-O TODO-FILE
+       END-IF
+
+       IF TODO-FILE-STATUS NOT = "00"
+           MOVE "Failed to open todo file for I-O" TO WS-ERROR-MESSAGE
+           PERFORM GENERATE-ERROR-RESPONSE
+           CLOSE TODO-FILE
+           EXIT PARAGRAPH
+       END-IF
+
+       MOVE WS-TODO-ID OF WS-TODO TO TF-TODO-ID *> Use the GENERATED ID
+
+       MOVE SPACES TO WS-DEBUG-MESSAGE
+       STRING "Creating todo with GENERATED ID: " WS-TODO-ID OF WS-TODO
+           DELIMITED BY SIZE INTO WS-DEBUG-MESSAGE
+       PERFORM DISPLAY-DEBUG
+
+       MOVE WS-USER-ID OF WS-TODO TO TF-USER-ID
+       MOVE WS-DESCRIPTION OF WS-TODO TO TF-DESCRIPTION
+       MOVE WS-DUE-DATE OF WS-TODO TO TF-DUE-DATE
+       MOVE WS-ESTIMATED-TIME OF WS-TODO TO TF-ESTIMATED-TIME
+       MOVE WS-STATUS OF WS-TODO TO TF-STATUS
+       MOVE WS-CREATION-DATE OF WS-TODO TO TF-CREATION-DATE
+       MOVE WS-LAST-UPDATE OF WS-TODO TO TF-LAST-UPDATE
+
+       WRITE TODO-RECORD
+           INVALID KEY
+               MOVE "Failed to create new todo record (Generated ID conflict?)" TO
+                   WS-ERROR-MESSAGE
+               PERFORM GENERATE-ERROR-RESPONSE
+           NOT INVALID KEY
+               MOVE 1 TO WS-SUCCESS-FLAG
+               MOVE WS-TODO-ID OF WS-TODO TO WS-FMT-ID *> Format the generated ID
+
+               STRING '{"success":true,"message":'
+                      '"Todo item created",'
+                      '"id":' DELIMITED BY SIZE
+                      FUNCTION TRIM(WS-FMT-ID) DELIMITED BY SIZE *> Send back generated ID
+                      '}' DELIMITED BY SIZE
+                   INTO WS-RESPONSE
+       END-WRITE
+
+       CLOSE TODO-FILE.
+
+
        
        UPDATE-TODO.
            OPEN I-O TODO-FILE
@@ -1340,7 +1428,6 @@
 
                            ADD 1 TO WS-NUMERIC-TEMP
 
-      *> --- START CHANGE: Format numeric fields INSIDE loop ---
                            MOVE TF-TODO-ID TO WS-FMT-ID
                            MOVE TF-USER-ID TO WS-FMT-USER-ID
                            MOVE TF-ESTIMATED-TIME TO WS-FMT-ESTIMATED-TIME
@@ -1349,7 +1436,6 @@
                            IF WS-ESTIMATED-TIME-JSON = SPACES
                                MOVE "0" TO WS-ESTIMATED-TIME-JSON
                            END-IF
-      *> --- END CHANGE ---
 
                            *> Build JSON object for the current matching record
                            STRING '{'                              DELIMITED BY SIZE
@@ -1366,12 +1452,10 @@
                                   WS-ESTIMATED-TIME-JSON           DELIMITED BY SIZE
                                   ',"status":"'                    DELIMITED BY SIZE
                                   FUNCTION TRIM(TF-STATUS)         DELIMITED BY SIZE
-      *> --- START CHANGE: Add missing creation/update dates ---
                                   '","creationDate":"'             DELIMITED BY SIZE
                                   FUNCTION TRIM(TF-CREATION-DATE)  DELIMITED BY SIZE
                                   '","lastUpdate":"'               DELIMITED BY SIZE
                                   FUNCTION TRIM(TF-LAST-UPDATE)    DELIMITED BY SIZE
-      *> --- END CHANGE ---
                                   '"}'                             DELIMITED BY SIZE
                                INTO WS-RESPONSE
                                POINTER WS-JSON-PARSING-IDX
@@ -1770,7 +1854,6 @@
 
            OPEN INPUT USER-FILE
 
-      *> --- START CHANGE: Handle File Not Found ---
            IF USER-FILE-STATUS = "35" *> File Not Found
                MOVE SPACES TO WS-DEBUG-MESSAGE
                STRING "LOGIN-USER: User file not found (status 35), login fails."
@@ -1794,7 +1877,6 @@
                CLOSE USER-FILE
                EXIT PARAGRAPH
            END-IF
-      *> --- END CHANGE ---
 
            *> Find user by email (Existing logic remains the same)
            MOVE WS-EMAIL OF WS-USER TO UF-EMAIL

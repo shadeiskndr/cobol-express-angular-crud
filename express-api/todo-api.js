@@ -174,10 +174,10 @@ app.post(
   asyncHandler(async (req, res) => {
     const todoData = req.body;
 
-    if (!todoData.id || !todoData.description) {
+    if (!todoData.description) {
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: id, description",
+        error: "Missing required field: description", // NEW
       });
     }
 
@@ -193,16 +193,29 @@ app.post(
     // Associate the todo with the authenticated user - ENSURE NUMERIC FORMAT
     todoData.userId = parseInt(req.user.id, 10);
 
-    // Debug output
-    console.log(`Creating todo with userId: ${todoData.userId}`);
+    // The COBOL backend will generate the ID
+    const payloadForCobol = { ...todoData };
+    delete payloadForCobol.id; // Ensure no ID is sent
 
-    const result = await todoService.createTodo(todoData);
+    // Debug output
+    console.log(`Creating todo for userId: ${todoData.userId}`);
+    console.log(`Payload for COBOL:`, payloadForCobol); // Log what's sent
+
+    const result = await todoService.createTodo(payloadForCobol); // NEW
 
     if (result.success === false) {
+      // Log the raw COBOL error if available
+      console.error(
+        "COBOL createTodo failed:",
+        result.error,
+        result.rawOutput || ""
+      );
       return res.status(400).json(result);
     }
 
-    res.status(201).json(result);
+    // The 'result' should now contain the generated ID from COBOL
+    console.log("COBOL createTodo successful, result:", result);
+    res.status(201).json(result); // Send the full result back (including generated ID)
   })
 );
 
