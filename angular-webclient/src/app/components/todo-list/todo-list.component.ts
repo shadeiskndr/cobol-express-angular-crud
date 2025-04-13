@@ -42,7 +42,6 @@ import { DatePipe, NgClass } from '@angular/common';
 export class TodoListComponent implements OnInit {
   todos: Todo[] = [];
   displayedColumns: string[] = [
-    'id',
     'description',
     'status',
     'dueDate',
