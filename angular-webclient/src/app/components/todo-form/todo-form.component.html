@@ -9,7 +9,7 @@
     </div>
     } @else {
     <form [formGroup]="todoForm" (ngSubmit)="onSubmit()">
-      <mat-form-field appearance="fill" class="full-width">
+      <mat-form-field appearance="outline" class="full-width">
         <mat-label>Description</mat-label>
         <textarea
           matInput
@@ -23,7 +23,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="full-width">
+      <mat-form-field appearance="outline" class="full-width">
         <mat-label>Status</mat-label>
         <mat-select formControlName="status" required>
           <mat-option value="PENDING">Pending</mat-option>
@@ -32,14 +32,14 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="full-width">
+      <mat-form-field appearance="outline" class="full-width">
         <mat-label>Due Date</mat-label>
         <input matInput [matDatepicker]="picker" formControlName="dueDate" />
         <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="full-width">
+      <mat-form-field appearance="outline" class="full-width">
         <mat-label>Estimated Time (minutes)</mat-label>
         <input matInput type="number" formControlName="estimatedTime" min="0" />
         @if (todoForm.get('estimatedTime')?.invalid) {

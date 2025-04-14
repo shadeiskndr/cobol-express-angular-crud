@@ -10,12 +10,12 @@ html {
     (
       color: (
         primary: mat.$violet-palette,
-        tertiary: mat.$orange-palette,
+        tertiary: mat.$blue-palette,
       ),
       typography: (
-        plain-family: Roboto,
+        plain-family: "Noto Sans JP",
       ),
-      density: 0,
+      density: -2,
     )
   );
 }

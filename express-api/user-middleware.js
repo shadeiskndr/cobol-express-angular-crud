@@ -87,7 +87,7 @@ class UserService {
         username: user.username,
       },
       JWT_SECRET,
-      { expiresIn: "24h" }
+      { expiresIn: "1h" }
     );
   }
 

@@ -3,11 +3,24 @@
 
   <span class="spacer"></span>
 
+  <!-- Only show these buttons if NOT on login/register page -->
+  @if (!isOnAuthPage) {
+  <!-- Buttons for logged-in users -->
   @if (currentUser) {
-  <button mat-button routerLink="/todos">
+  <button mat-button [matMenuTriggerFor]="todoMenu">
     <mat-icon>list</mat-icon>
     Todos
   </button>
+  <mat-menu #todoMenu="matMenu">
+    <button mat-menu-item routerLink="/todos">
+      <mat-icon>list</mat-icon>
+      <span>Tabular View</span>
+    </button>
+    <button mat-menu-item routerLink="/kanban">
+      <mat-icon>view_kanban</mat-icon>
+      <span>Kanban View</span>
+    </button>
+  </mat-menu>
 
   <button mat-button [matMenuTriggerFor]="userMenu">
     <mat-icon>account_circle</mat-icon>
@@ -23,13 +36,9 @@
       <span>Logout</span>
     </button>
   </mat-menu>
-
-  <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme">
-    <mat-icon>{{
-      (themeService.darkMode$ | async) ? "light_mode" : "dark_mode"
-    }}</mat-icon>
-  </button>
-  } @else {
+  }
+  <!-- Buttons for logged-out users (but not on login/register) -->
+  @else {
   <button mat-button routerLink="/login">
     <mat-icon>login</mat-icon>
     Login
@@ -38,10 +47,12 @@
     <mat-icon>person_add</mat-icon>
     Register
   </button>
+  } }
+
+  <!-- Theme toggle button - always visible -->
   <button mat-icon-button (click)="toggleTheme()" aria-label="Toggle theme">
     <mat-icon>{{
       (themeService.darkMode$ | async) ? "light_mode" : "dark_mode"
     }}</mat-icon>
   </button>
-  }
 </mat-toolbar>

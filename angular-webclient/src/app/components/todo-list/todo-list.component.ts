@@ -1,46 +1,63 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  AfterViewInit,
+  OnDestroy,
+} from '@angular/core';
 import { Router } from '@angular/router';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table'; // Import MatTableDataSource
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator'; // Import MatPaginator
+import { MatSort, MatSortModule } from '@angular/material/sort'; // Optional: Import MatSort for sorting
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
+import { MatChipsModule } from '@angular/material/chips'; // Keep for status display
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import {
+  MatBottomSheet,
+  MatBottomSheetModule,
+} from '@angular/material/bottom-sheet'; // Import MatBottomSheet
+import { MatTooltipModule } from '@angular/material/tooltip'; // Import MatTooltipModule
 import { TodoService } from '../../services/todo.service';
-import { AuthService } from '../../services/auth.service';
 import { Todo } from '../../models/todo';
 import { LoadingSpinnerComponent } from '../loading-spinner/loading-spinner.component';
-import { DatePipe, NgClass } from '@angular/common';
+import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component'; // Import ConfirmDialogComponent
+import {
+  SearchTodoSheetComponent,
+  SearchCriteria,
+} from '../search-todo-sheet/search-todo-sheet.component'; // Import SearchTodoSheetComponent
+import { DatePipe, NgClass, CommonModule } from '@angular/common'; // Import CommonModule
+import { Subject } from 'rxjs';
+import { takeUntil, filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-todo-list',
   standalone: true,
   imports: [
-    NgClass,
+    CommonModule, // Use CommonModule instead of NgClass/DatePipe individually if preferred
     DatePipe,
+    NgClass,
     MatTableModule,
+    MatPaginatorModule, // Add MatPaginatorModule
+    MatSortModule, // Optional: Add MatSortModule
     MatButtonModule,
     MatIconModule,
     MatCardModule,
     MatChipsModule,
     MatSnackBarModule,
     MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    ReactiveFormsModule,
+    MatBottomSheetModule, // Add MatBottomSheetModule
+    MatTooltipModule, // Add MatTooltipModule
     LoadingSpinnerComponent,
+    ConfirmDialogComponent, // Add ConfirmDialogComponent
+    SearchTodoSheetComponent, // Add SearchTodoSheetComponent
   ],
   templateUrl: './todo-list.component.html',
   styleUrl: './todo-list.component.scss',
 })
-export class TodoListComponent implements OnInit {
-  todos: Todo[] = [];
+export class TodoListComponent implements OnInit, AfterViewInit, OnDestroy {
   displayedColumns: string[] = [
     'description',
     'status',
@@ -48,122 +65,129 @@ export class TodoListComponent implements OnInit {
     'estimatedTime',
     'actions',
   ];
+  dataSource: MatTableDataSource<Todo> = new MatTableDataSource<Todo>([]); // Use MatTableDataSource
   isLoading = false;
-  searchForm: FormGroup;
-  currentUserId: number | null = null;
+  currentSearchCriteria: SearchCriteria | null = null; // Store current criteria
+  private destroy$ = new Subject<void>(); // For unsubscribing
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort; // Optional: for sorting
 
   constructor(
     private todoService: TodoService,
-    private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private fb: FormBuilder
-  ) {
-    this.searchForm = this.fb.group({
-      status: [''],
-      minTime: [null],
-      maxTime: [null],
-    });
-
-    // Get current user from AuthService
-    this.authService.currentUser$.subscribe((user) => {
-      if (user) {
-        this.currentUserId = user.id;
-      }
-    });
-  }
+    private bottomSheet: MatBottomSheet // Inject MatBottomSheet
+  ) {}
 
   ngOnInit(): void {
-    this.loadTodos();
+    this.loadTodos(); // Initial load
+  }
+
+  ngAfterViewInit(): void {
+    // Connect paginator and sort after view is initialized
+    this.dataSource.paginator = this.paginator;
+    this.dataSource.sort = this.sort; // Optional: Connect sort
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadTodos(): void {
     this.isLoading = true;
-    this.todoService.getTodos().subscribe({
-      next: (data) => {
-        // Filter todos by current user ID if needed
-        this.todos = data;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        this.snackBar.open(
-          'Error loading todos: ' + (error.error?.error || 'Unknown error'),
-          'Close',
-          { duration: 3000 }
-        );
-        this.isLoading = false;
-      },
-    });
+    this.currentSearchCriteria = null; // Reset search criteria on full load
+    this.todoService
+      .getTodos()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.dataSource.data = data;
+          // Paginator and sort are connected in ngAfterViewInit
+          this.isLoading = false;
+        },
+        error: (error) => {
+          this.handleError('Error loading todos', error);
+        },
+      });
   }
 
-  searchTodos(): void {
-    const criteria = this.getSearchCriteria();
+  openSearchSheet(): void {
+    const bottomSheetRef = this.bottomSheet.open(SearchTodoSheetComponent);
+
+    bottomSheetRef
+      .afterDismissed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result: SearchCriteria | 'reset' | null | undefined) => {
+        if (result === 'reset') {
+          this.resetSearch();
+        } else if (result && typeof result === 'object') {
+          // Check if it's a valid criteria object
+          this.searchTodos(result);
+        }
+        // Do nothing if dismissed without action (result is null/undefined)
+      });
+  }
+
+  searchTodos(criteria: SearchCriteria): void {
     if (!this.hasValidSearchCriteria(criteria)) {
       this.snackBar.open(
         'Please provide at least one search criteria',
         'Close',
-        {
-          duration: 3000,
-        }
+        { duration: 3000 }
       );
       return;
     }
 
     this.isLoading = true;
-    this.todoService.searchTodos(criteria).subscribe({
-      next: (data) => {
-        this.todos = data;
-        this.isLoading = false;
-        this.snackBar.open(
-          `Found ${data.length} todos matching your criteria`,
-          'Close',
-          {
-            duration: 3000,
+    this.currentSearchCriteria = criteria; // Store the criteria
+    this.todoService
+      .searchTodos(criteria)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.dataSource.data = data;
+          // Reset paginator to first page after search
+          if (this.dataSource.paginator) {
+            this.dataSource.paginator.firstPage();
           }
-        );
-      },
-      error: (error) => {
-        this.snackBar.open(
-          'Error searching todos: ' + (error.error?.error || 'Unknown error'),
-          'Close',
-          { duration: 3000 }
-        );
-        this.isLoading = false;
-      },
-    });
+          this.isLoading = false;
+          this.snackBar.open(
+            `Found ${data.length} todos matching your criteria`,
+            'Close',
+            { duration: 3000 }
+          );
+        },
+        error: (error) => {
+          this.handleError('Error searching todos', error);
+        },
+      });
   }
 
   resetSearch(): void {
-    this.searchForm.reset({
-      status: '',
-      minTime: null,
-      maxTime: null,
+    this.loadTodos(); // Reload all todos
+    this.snackBar.open('Filters reset. Showing all todos.', 'Close', {
+      duration: 2000,
     });
-    this.loadTodos();
   }
 
-  private getSearchCriteria(): any {
-    const formValues = this.searchForm.value;
-    const criteria: any = {};
-
-    if (formValues.status) {
-      criteria.status = formValues.status;
+  refreshData(): void {
+    this.isLoading = true;
+    // Decide whether to reload all or re-apply current search
+    if (this.currentSearchCriteria) {
+      this.searchTodos(this.currentSearchCriteria);
+      this.snackBar.open('Refreshed search results.', 'Close', {
+        duration: 2000,
+      });
+    } else {
+      this.loadTodos();
+      this.snackBar.open('Refreshed todo list.', 'Close', { duration: 2000 });
     }
-
-    if (formValues.minTime !== null && formValues.minTime !== '') {
-      criteria.minTime = formValues.minTime;
-    }
-
-    if (formValues.maxTime !== null && formValues.maxTime !== '') {
-      criteria.maxTime = formValues.maxTime;
-    }
-
-    return criteria;
   }
 
   private hasValidSearchCriteria(criteria: any): boolean {
-    // Simply check if there's at least one criterion
     return Object.keys(criteria).length > 0;
   }
 
@@ -172,23 +196,39 @@ export class TodoListComponent implements OnInit {
   }
 
   deleteTodo(id: number): void {
-    if (confirm('Are you sure you want to delete this todo?')) {
-      this.todoService.deleteTodo(id).subscribe({
-        next: () => {
-          this.snackBar.open('Todo deleted successfully', 'Close', {
-            duration: 3000,
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '350px',
+      data: {
+        title: 'Confirm Deletion',
+        message: 'Are you sure you want to delete this todo?',
+      },
+    });
+
+    dialogRef
+      .afterClosed()
+      .pipe(
+        filter((result) => result === true), // Only proceed if confirmed
+        takeUntil(this.destroy$)
+      )
+      .subscribe(() => {
+        this.isLoading = true; // Optional: show loading during delete
+        this.todoService
+          .deleteTodo(id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.snackBar.open('Todo deleted successfully', 'Close', {
+                duration: 3000,
+                panelClass: ['success-snackbar'], // Optional success style
+              });
+              // Refresh data based on current view (all or filtered)
+              this.refreshData();
+            },
+            error: (error) => {
+              this.handleError('Error deleting todo', error);
+            },
           });
-          this.loadTodos();
-        },
-        error: (error) => {
-          this.snackBar.open(
-            'Error deleting todo: ' + (error.error?.error || 'Unknown error'),
-            'Close',
-            { duration: 3000 }
-          );
-        },
       });
-    }
   }
 
   getStatusClass(status: string): string {
@@ -206,5 +246,16 @@ export class TodoListComponent implements OnInit {
 
   addNewTodo(): void {
     this.router.navigate(['/todos/new']);
+  }
+
+  // Helper function for consistent error handling
+  private handleError(message: string, error: any): void {
+    this.isLoading = false;
+    const errorMessage = error.error?.error || error.message || 'Unknown error';
+    this.snackBar.open(`${message}: ${errorMessage}`, 'Close', {
+      duration: 4000,
+      panelClass: ['error-snackbar'], // Use error style
+    });
+    console.error(message, error); // Log for debugging
   }
 }
