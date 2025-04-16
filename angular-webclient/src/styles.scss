@@ -47,7 +47,7 @@ html {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto 0 auto;
   padding: 10px 0 0 0;
   flex-grow: 1; // Allow container to grow if needed
@@ -57,21 +57,4 @@ mat-card {
   // Using theme variables for background and shadow (optional, default is usually fine)
   background-color: var(--mat-sys-surface-container-high);
   box-shadow: var(--mat-elevation-z2); // Example using elevation variables
-}
-
-// Global style for error snackbar panel
-.error-snackbar {
-  // Use error theme colors
-  --mdc-snackbar-container-color: var(--mat-sys-error-container);
-  --mat-mdc-snack-bar-button-color: var(--mat-sys-on-error-container);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-error-container);
-}
-
-// Optional: Style for success snackbar if needed
-.success-snackbar {
-  --mdc-snackbar-container-color: var(
-    --mat-sys-tertiary-container
-  ); // Or primary-container
-  --mat-mdc-snack-bar-button-color: var(--mat-sys-on-tertiary-container);
-  --mdc-snackbar-supporting-text-color: var(--mat-sys-on-tertiary-container);
 }

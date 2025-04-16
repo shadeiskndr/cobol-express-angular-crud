@@ -8,7 +8,7 @@ import { map } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class TodoService {
-  private apiUrl = 'http://localhost:3000/api/todos';
+  private apiUrl = '/api/todos';
 
   constructor(private http: HttpClient) {}
 
