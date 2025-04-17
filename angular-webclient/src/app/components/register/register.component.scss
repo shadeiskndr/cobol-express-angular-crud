@@ -9,7 +9,7 @@
   min-height: calc(
     100vh - 64px - 40px
   ); // Adjust based on navbar height and desired padding
-  padding: 0 0 20px 0; // Add some padding around the container
+  padding: 20px; // Add some padding around the container
   box-sizing: border-box; // Include padding in height calculation
 }
 

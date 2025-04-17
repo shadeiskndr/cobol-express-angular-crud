@@ -1,6 +1,8 @@
 # COBOL-Express-Angular CRUD Application
 
-This project is a full-stack CRUD application that demonstrates integration between legacy COBOL systems, a modern Express.js API, and an Angular frontend.
+This project is a todo list CRUD web application that demonstrates integration between legacy COBOL systems, a modern Express.js API, and an Angular frontend.
+
+![Demo](https://raw.githubusercontent.com/shadeiskndr/shadeiskndr.github.io/main/uploads/todolist.gif)
 
 ## Project Structure
 
