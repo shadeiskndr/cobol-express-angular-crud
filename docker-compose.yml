@@ -26,6 +26,7 @@ services:
     environment:
       - NODE_ENV=production
       - COBOL_HOST=cobol-backend
+      - JWT_SECRET
     restart: unless-stopped
 
   angular-frontend:

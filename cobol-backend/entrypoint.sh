@@ -4,7 +4,8 @@ set -e
 # Set environment variables for data file location
 export DD_TODO_FILE=/app/data/todos.dat
 export DD_USER_FILE=/app/data/users.dat
-export DD_SEQUENCE_FILE=/app/data/sequence.dat
+export DD_TODO_SEQUENCE_FILE=/app/data/todo_sequence.dat
+export DD_USER_SEQUENCE_FILE=/app/data/user_sequence.dat
 
 # Verify COBOL executable exists
 if [ ! -f /app/combined-program ]; then

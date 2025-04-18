@@ -1,133 +1,119 @@
 # COBOL-Express-Angular CRUD Application
 
-This project is a todo list CRUD web application that demonstrates integration between legacy COBOL systems, a modern Express.js API, and an Angular frontend.
+This project is a full-stack Todo List CRUD web application demonstrating seamless integration between a legacy COBOL backend, a modern Express.js REST API, and an Angular frontend—all orchestrated with Docker Compose.
 
 ![Demo](https://raw.githubusercontent.com/shadeiskndr/shadeiskndr.github.io/main/uploads/todolist.gif)
 
 ## Project Structure
 
-The application consists of three main components:
+The application consists of three main Dockerized components:
 
-```text
+```
 cobol-express-angular-crud/
-├── angular-webclient/ # Angular 17+ frontend application
-├── express-api/       # Express.js REST API middleware
-└── cobol-backend/     # COBOL backend for data processing
+├── angular-webclient/   # Angular 17+ frontend (served by Nginx)
+├── express-api/         # Express.js REST API (Node.js)
+└── cobol-backend/       # COBOL backend (with Node.js socket server)
 ```
 
 ## Components
 
-### COBOL Backend
+### COBOL Backend (`cobol-backend/`)
 
-The COBOL backend handles data storage and core business logic:
+- **COBOL program (`combined-program.cbl`)**: Implements all business logic and data persistence for todos and users.
+- **Node.js server (`server.js`)**: Exposes a TCP socket interface for the Express API to communicate with the COBOL program.
+- **Entrypoint script (`entrypoint.sh`)**: Sets up environment and launches the backend services.
+- **Data storage**: Uses indexed files for persistent storage, mapped to a Docker volume.
 
-- `customer-database.cbl`: COBOL program for customer data management
-- `server.js`: Node.js wrapper to expose COBOL functionality
-- Containerized with Docker for easy deployment
+### Express API (`express-api/`)
 
-### Express API
+- **Express.js server (`todo-api.js`)**: Provides RESTful endpoints for todo and user operations.
+- **Authentication**: Uses JWT for secure user authentication.
+- **Middleware**: Handles communication with the COBOL backend via TCP sockets.
+- **Acts as a bridge** between the Angular frontend and the COBOL backend.
+- **Environment variables**: Sensitive configuration (such as the JWT secret) is loaded from environment variables, typically via a `.env` file.
 
-The Express API serves as middleware between the frontend and COBOL backend:
+### Angular Frontend (`angular-webclient/`)
 
-- `customer-api.js`: REST API endpoints for customer operations
-- `db-middleware.js`: Communication layer with COBOL backend
-- Provides modern RESTful interface to legacy COBOL system
+- **Angular 17+ SPA**: Modern, responsive UI for managing todos and user accounts.
+- **Nginx**: Serves the built Angular app and proxies API requests to the Express API.
+- **JWT Auth**: Handles login, registration, and session management.
 
-### Angular Frontend
+## Environment Variables
 
-The Angular frontend provides a modern user interface:
+### Using a `.env` File
 
-- Built with Angular 17+
-- Responsive design for desktop and mobile devices
-- Communicates with the Express API to perform CRUD operations
+The Express API requires certain environment variables for secure operation, such as the JWT secret.  
+**Do not commit secrets directly to your repository.**
+
+1. **Copy the example file:**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` and set a strong value for `JWT_SECRET`:**
+
+   ```
+   JWT_SECRET=your-very-strong-secret-here
+   ```
+
+3. **Docker Compose will automatically load variables from `.env` and inject them into the containers.**
+
+### Example `.env.example`
+
+```env
+# Copy this file to .env and set your own secret!
+JWT_SECRET=change-me-to-a-strong-secret
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Node.js (v18+)
-- Angular CLI
+- [Docker](https://www.docker.com/get-started) and [Docker Compose](https://docs.docker.com/compose/)
+- (Optional for development) Node.js (v18+) and Angular CLI
 
-### Installation
+### Quick Start (Recommended)
 
-1.  Clone the repository:
+To build and start all services in the background, simply run:
 
-    ```bash
-    git clone https://github.com/yourusername/cobol-express-angular-crud.git
-    ```
+```bash
+docker-compose up -d
+```
 
-    ```bash
-    cd cobol-express-angular-crud
-    ```
+This will:
 
-2.  Start the COBOL backend:
+- Build all three containers (COBOL backend, Express API, Angular frontend)
+- Start the services and set up networking and volumes automatically
 
-    ```bash
-    cd cobol-backend
-    ```
+Once all containers are running, access the application at:  
+[http://localhost:80](http://localhost:80) (or [http://localhost](http://localhost))
 
-    ```bash
-    docker build -t cobol-backend .
-    ```
+### Stopping the Application
 
-    ```bash
-    docker run -d -p 3001:3001 --name cobol-backend cobol-backend
-    ```
+To stop all containers:
 
-3.  Start the Express API:
+```bash
+docker-compose down
+```
 
-    ```bash
-    cd ../express-api
-    ```
+### Development Workflow
 
-    ```bash
-    npm install
-    ```
+Each component can be developed and tested independently:
 
-    ```bash
-    npm start
-    ```
-
-4.  Start the Angular frontend:
-
-    ```bash
-    cd ../angular-webclient
-    ```
-
-    ```bash
-    npm install
-    ```
-
-    ```bash
-    ng serve
-    ```
-
-5.  Access the application at [http://localhost:4200](http://localhost:4200)
-
-## Development
-
-Each component can be developed independently:
-
-- **COBOL Backend**: Modify the COBOL programs and rebuild the Docker container
-- **Express API**: Standard Node.js/Express development workflow
-- **Angular Frontend**: Use Angular CLI for component generation and development
+- **COBOL Backend**: Edit COBOL or Node.js files in `cobol-backend/`, then rebuild the container.
+- **Express API**: Standard Node.js/Express development in `express-api/`.
+- **Angular Frontend**: Use Angular CLI in `angular-webclient/` for local development (`ng serve`), or rebuild the container for production.
 
 ## Deployment
 
-The application is containerized for easy deployment:
-
-- Each component has its own Dockerfile
-- Use Docker Compose for orchestrating all components together
-
-## License
-
-MIT License
+- All components are containerized and orchestrated via Docker Compose.
+- Persistent data is stored in a Docker volume (`cobol-data`).
+- The system is suitable for local development, demos, or as a modernization template.
 
 ## Acknowledgments
 
-- This project demonstrates integration between legacy systems and modern web technologies
-- Showcases how COBOL systems can be modernized without complete rewrites
-- Provides a template for similar modernization efforts
+- Demonstrates modernization and integration of legacy COBOL systems with modern web technologies.
+- Provides a template for similar modernization efforts.
 
 _Note: This is a demonstration project showing how legacy COBOL systems can be integrated with modern web technologies._

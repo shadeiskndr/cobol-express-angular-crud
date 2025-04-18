@@ -2,8 +2,7 @@ const net = require("net");
 const jwt = require("jsonwebtoken");
 
 // Secret key for JWT
-const JWT_SECRET =
-  "66c3b5554dedf8a063401cb1f9216ac6238bbb081ac646a39e014716eff079";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 class UserService {
   constructor() {}

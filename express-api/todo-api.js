@@ -28,11 +28,6 @@ app.post(
       });
     }
 
-    // Generate a unique ID if not provided
-    if (!userData.id) {
-      userData.id = Math.floor(10000 + Math.random() * 90000); // 5-digit number
-    }
-
     const result = await userService.createUser(userData);
 
     if (result.success === false) {
