@@ -1,0 +1,167 @@
+<div
+  class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+>
+  <div class="max-w-4xl w-full">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <mat-card appearance="outlined" class="overflow-hidden">
+        <mat-card-content class="p-0">
+          <div class="grid md:grid-cols-2 gap-0">
+            <!-- Left side - Branding -->
+            <div
+              class="flex flex-col justify-center space-y-6 p-8 bg-gradient-to-br from-blue-600 to-purple-700 text-white"
+            >
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-12 h-12 bg-white rounded-lg flex items-center justify-center"
+                >
+                  <mat-icon class="text-blue-600">task_alt</mat-icon>
+                </div>
+                <h1 class="text-2xl font-bold">TodoApp</h1>
+              </div>
+              <div>
+                <h2 class="text-3xl font-bold mb-2">Welcome back!</h2>
+                <p class="text-blue-100">
+                  Sign in to manage your todos and stay organized.
+                </p>
+              </div>
+              <div class="hidden md:block">
+                <div class="space-y-4 text-sm text-blue-100">
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">check_circle</mat-icon>
+                    <span>Organize your tasks efficiently</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">sync</mat-icon>
+                    <span>Sync across all your devices</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">security</mat-icon>
+                    <span>Secure and private</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right side - Login Form -->
+            <div class="flex flex-col justify-center p-8 space-y-6">
+              <div class="text-center md:text-left">
+                <h3 class="text-2xl font-semibold text-gray-900 mb-2">
+                  Sign in to your account
+                </h3>
+                <p class="text-gray-600">
+                  Enter your credentials to access your todos
+                </p>
+              </div>
+
+              <!-- Error Message -->
+              @if (errorMessage) {
+              <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                <div class="flex items-center">
+                  <mat-icon class="text-red-400 mr-2">error</mat-icon>
+                  <span class="text-red-700 text-sm">{{ errorMessage }}</span>
+                </div>
+              </div>
+              }
+
+              <!-- Form Fields -->
+              <div class="space-y-4">
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Email address</mat-label>
+                  <input
+                    matInput
+                    type="email"
+                    formControlName="email"
+                    placeholder="Enter your email"
+                    [disabled]="isLoading"
+                  />
+                  <mat-icon matPrefix class="mr-2 text-gray-400"
+                    >email</mat-icon
+                  >
+                  @if ((form.get('email')?.touched || form.get('email')?.dirty)
+                  && form.get('email')?.hasError('required')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Email is required
+                  </mat-error>
+                  } @if ((form.get('email')?.touched ||
+                  form.get('email')?.dirty) &&
+                  form.get('email')?.hasError('email')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Please enter a valid email address
+                  </mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Password</mat-label>
+                  <input
+                    matInput
+                    type="password"
+                    formControlName="password"
+                    placeholder="Enter your password"
+                    [disabled]="isLoading"
+                  />
+                  <mat-icon matPrefix class="mr-2 text-gray-400">lock</mat-icon>
+                  @if ((form.get('password')?.touched ||
+                  form.get('password')?.dirty) &&
+                  form.get('password')?.hasError('required')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Password is required
+                  </mat-error>
+                  } @if ((form.get('password')?.touched ||
+                  form.get('password')?.dirty) &&
+                  form.get('password')?.hasError('minlength')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Password must be at least 4 characters
+                  </mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <!-- Forgot Password Link -->
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  mat-button
+                  class="text-blue-600 hover:text-blue-800"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <!-- Actions -->
+        <mat-card-actions
+          class="flex justify-between items-center p-6 bg-gray-50"
+        >
+          <button
+            type="button"
+            mat-button
+            class="text-gray-600"
+            (click)="navigateToRegister()"
+            [disabled]="isLoading"
+          >
+            Don't have an account? Sign up
+          </button>
+
+          <button
+            type="submit"
+            mat-raised-button
+            color="primary"
+            [disabled]="!form.valid || isLoading"
+            class="min-w-[120px]"
+          >
+            @if (isLoading) {
+            <mat-icon class="animate-spin mr-2">refresh</mat-icon>
+            Signing in... } @else { Sign in }
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </form>
+  </div>
+</div>

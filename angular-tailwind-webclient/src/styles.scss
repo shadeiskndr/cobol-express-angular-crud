@@ -1,25 +1,59 @@
-
 // Custom Theming for Angular Material
 // For more information: https://material.angular.io/guide/theming
-@use '@angular/material' as mat;
-@use 'sass:meta';
+@use "@angular/material" as mat;
+@use "sass:meta";
 @use "./variables";
 
 html {
-  color-scheme: light;
-  @include mat.theme((
-    color: (
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
-    ),
-    // typography: Roboto,
-    typography: (
-        plain-family: #{meta.inspect(variables.$regular-font-family)},
-        brand-family: #{meta.inspect(variables.$heading-font-family)},
-    ),
-    density: 0,
-  ));
-}/* You can add global styles to this file, and also import other style files */
+  color-scheme: light dark;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      // typography: Roboto,
+      typography:
+        (
+          plain-family: #{meta.inspect(variables.$regular-font-family)},
+          brand-family: #{meta.inspect(variables.$heading-font-family)},
+        ),
+      density: 0,
+    )
+  );
+} /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.success-snackbar {
+  --mdc-snackbar-container-color: #4caf50;
+  --mdc-snackbar-supporting-text-color: white;
+  --mat-snack-bar-button-color: white;
+}
+
+.error-snackbar {
+  --mdc-snackbar-container-color: #f44336;
+  --mdc-snackbar-supporting-text-color: white;
+  --mat-snack-bar-button-color: white;
+}
+
+// Loading animation for dialog
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

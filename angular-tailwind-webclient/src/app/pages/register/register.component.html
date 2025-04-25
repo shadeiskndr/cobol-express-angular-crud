@@ -1,0 +1,285 @@
+<div
+  class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8"
+>
+  <div class="max-w-4xl w-full">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <mat-card appearance="outlined" class="overflow-hidden">
+        <mat-card-content class="p-0">
+          <div class="grid md:grid-cols-2 gap-0">
+            <!-- Left side - Branding -->
+            <div
+              class="flex flex-col justify-center space-y-6 p-8 bg-gradient-to-br from-green-600 to-blue-700 text-white"
+            >
+              <div class="flex items-center space-x-3">
+                <div
+                  class="w-12 h-12 bg-white rounded-lg flex items-center justify-center"
+                >
+                  <mat-icon class="text-green-600">task_alt</mat-icon>
+                </div>
+                <h1 class="text-2xl font-bold">TodoApp</h1>
+              </div>
+              <div>
+                <h2 class="text-3xl font-bold mb-2">Join us today!</h2>
+                <p class="text-green-100">
+                  Create your account and start organizing your life with our
+                  powerful todo management system.
+                </p>
+              </div>
+              <div class="hidden md:block">
+                <div class="space-y-4 text-sm text-green-100">
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">person_add</mat-icon>
+                    <span>Free account creation</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">cloud_sync</mat-icon>
+                    <span>Instant synchronization</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">shield</mat-icon>
+                    <span>Enterprise-grade security</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <mat-icon class="text-lg">support</mat-icon>
+                    <span>24/7 customer support</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right side - Registration Form -->
+            <div class="flex flex-col justify-center p-8 space-y-6">
+              <div class="text-center md:text-left">
+                <h3 class="text-2xl font-semibold text-gray-900 mb-2">
+                  Create your account
+                </h3>
+                <p class="text-gray-600">
+                  Fill in your information to get started
+                </p>
+              </div>
+
+              <!-- Error Message -->
+              @if (errorMessage) {
+              <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                <div class="flex items-center">
+                  <mat-icon class="text-red-400 mr-2">error</mat-icon>
+                  <span class="text-red-700 text-sm">{{ errorMessage }}</span>
+                </div>
+              </div>
+              }
+
+              <!-- Form Fields -->
+              <div class="space-y-4">
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Username</mat-label>
+                  <input
+                    matInput
+                    type="text"
+                    formControlName="username"
+                    placeholder="Choose a username"
+                    [disabled]="isLoading"
+                  />
+                  <mat-icon matPrefix class="mr-2 text-gray-400"
+                    >person</mat-icon
+                  >
+                  @if ((form.get('username')?.touched ||
+                  form.get('username')?.dirty) &&
+                  form.get('username')?.hasError('required')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Username is required
+                  </mat-error>
+                  } @if ((form.get('username')?.touched ||
+                  form.get('username')?.dirty) &&
+                  form.get('username')?.hasError('minlength')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Username must be at least 3 characters
+                  </mat-error>
+                  } @if ((form.get('username')?.touched ||
+                  form.get('username')?.dirty) &&
+                  form.get('username')?.hasError('maxlength')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Username must be less than 20 characters
+                  </mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Email address</mat-label>
+                  <input
+                    matInput
+                    type="email"
+                    formControlName="email"
+                    placeholder="Enter your email"
+                    [disabled]="isLoading"
+                  />
+                  <mat-icon matPrefix class="mr-2 text-gray-400"
+                    >email</mat-icon
+                  >
+                  @if ((form.get('email')?.touched || form.get('email')?.dirty)
+                  && form.get('email')?.hasError('required')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Email is required
+                  </mat-error>
+                  } @if ((form.get('email')?.touched ||
+                  form.get('email')?.dirty) &&
+                  form.get('email')?.hasError('email')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Please enter a valid email address
+                  </mat-error>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Password</mat-label>
+                  <input
+                    matInput
+                    [type]="hidePassword ? 'password' : 'text'"
+                    formControlName="password"
+                    placeholder="Create a strong password"
+                    [disabled]="isLoading"
+                  />
+                  <mat-icon matPrefix class="mr-2 text-gray-400">lock</mat-icon>
+                  <button
+                    type="button"
+                    matSuffix
+                    mat-icon-button
+                    (click)="hidePassword = !hidePassword"
+                    [attr.aria-label]="'Hide password'"
+                    [attr.aria-pressed]="hidePassword"
+                  >
+                    <mat-icon>{{
+                      hidePassword ? "visibility_off" : "visibility"
+                    }}</mat-icon>
+                  </button>
+                  @if ((form.get('password')?.touched ||
+                  form.get('password')?.dirty) &&
+                  form.get('password')?.hasError('required')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Password is required
+                  </mat-error>
+                  } @if ((form.get('password')?.touched ||
+                  form.get('password')?.dirty) &&
+                  form.get('password')?.hasError('minlength')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Password must be at least 8 characters
+                  </mat-error>
+                  } @if ((form.get('password')?.touched ||
+                  form.get('password')?.dirty) &&
+                  form.get('password')?.hasError('passwordStrength')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Password must contain uppercase, lowercase, number, and
+                    special character
+                  </mat-error>
+                  } @if (form.get('password')?.value &&
+                  !form.get('password')?.hasError('passwordStrength')) {
+                  <mat-hint class="{{ getPasswordStrengthColor() }}">
+                    Password strength: {{ getPasswordStrengthText() }}
+                  </mat-hint>
+                  }
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Confirm Password</mat-label>
+                  <input
+                    matInput
+                    [type]="hideConfirmPassword ? 'password' : 'text'"
+                    formControlName="confirmPassword"
+                    placeholder="Confirm your password"
+                    [disabled]="isLoading"
+                  />
+                  <mat-icon matPrefix class="mr-2 text-gray-400"
+                    >lock_outline</mat-icon
+                  >
+                  <button
+                    type="button"
+                    matSuffix
+                    mat-icon-button
+                    (click)="hideConfirmPassword = !hideConfirmPassword"
+                    [attr.aria-label]="'Hide confirm password'"
+                    [attr.aria-pressed]="hideConfirmPassword"
+                  >
+                    <mat-icon>{{
+                      hideConfirmPassword ? "visibility_off" : "visibility"
+                    }}</mat-icon>
+                  </button>
+                  @if ((form.get('confirmPassword')?.touched ||
+                  form.get('confirmPassword')?.dirty) &&
+                  form.get('confirmPassword')?.hasError('required')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Please confirm your password
+                  </mat-error>
+                  } @if ((form.get('confirmPassword')?.touched ||
+                  form.get('confirmPassword')?.dirty) &&
+                  form.hasError('passwordMismatch')) {
+                  <mat-error>
+                    <mat-icon class="text-sm mr-1">error</mat-icon>
+                    Passwords do not match
+                  </mat-error>
+                  }
+                </mat-form-field>
+              </div>
+
+              <!-- Terms and Conditions -->
+              <div class="text-sm text-gray-600">
+                <p>
+                  By creating an account, you agree to our
+                  <button
+                    type="button"
+                    mat-button
+                    class="text-blue-600 hover:text-blue-800 p-0 min-w-0 h-auto"
+                  >
+                    Terms of Service
+                  </button>
+                  and
+                  <button
+                    type="button"
+                    mat-button
+                    class="text-blue-600 hover:text-blue-800 p-0 min-w-0 h-auto"
+                  >
+                    Privacy Policy
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+
+        <!-- Actions -->
+        <mat-card-actions
+          class="flex justify-between items-center p-6 bg-gray-50"
+        >
+          <button
+            type="button"
+            mat-button
+            class="text-gray-600"
+            (click)="navigateToLogin()"
+            [disabled]="isLoading"
+          >
+            Already have an account? Sign in
+          </button>
+
+          <button
+            type="submit"
+            mat-raised-button
+            color="primary"
+            [disabled]="!form.valid || isLoading"
+            class="min-w-[140px]"
+          >
+            @if (isLoading) {
+            <mat-icon class="animate-spin mr-2">refresh</mat-icon>
+            Creating account... } @else { Create account }
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </form>
+  </div>
+</div>

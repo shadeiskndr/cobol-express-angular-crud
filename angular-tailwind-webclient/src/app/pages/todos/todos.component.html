@@ -1,0 +1,509 @@
+<!-- Ideally, you would use h-[100dvh] with body, and then use h-full with the sidenav-container. -->
+<mat-sidenav-container class="h-[100dvh]">
+  <!-- You can apply fixedInViewport to the mat-sidenav to keep it fixed when scrolling. -->
+  <mat-sidenav
+    #drawer
+    class="w-[288px]! border-r border-outline-variant!"
+    [attr.role]="(isLessThanMD$ | async) ? 'dialog' : 'navigation'"
+    [mode]="(isLessThanMD$ | async) ? 'over' : 'side'"
+    [opened]="(isLessThanMD$ | async) === false"
+  >
+    <div class="flex flex-col h-full">
+      <mat-toolbar class="bg-inherit">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center"
+          >
+            <mat-icon class="text-white text-lg">check_box</mat-icon>
+          </div>
+          <span class="font-semibold text-lg">TodoApp</span>
+        </div>
+        @if (isLessThanMD$ | async) {
+        <span class="flex-1"></span>
+        <button
+          mat-icon-button
+          aria-label="Toggle sidenav"
+          (click)="drawer.toggle()"
+        >
+          <mat-icon>menu_opened</mat-icon>
+        </button>
+        }
+      </mat-toolbar>
+
+      <!-- Main Navigation -->
+      <mat-nav-list>
+        <h3
+          matSubheader
+          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          Todos
+        </h3>
+        @for (menuItem of mainMenu; track menuItem.id) {
+        <a
+          mat-list-item
+          [activated]="menuItem.isActive ?? false"
+          (click)="onFilterChange(menuItem.id)"
+          class="cursor-pointer"
+        >
+          <mat-icon
+            matListItemIcon
+            [class]="
+              classNames(
+                menuItem.isActive
+                  ? 'icon-filled text-primary!'
+                  : 'text-gray-400! dark:text-gray-500!'
+              )
+            "
+          >
+            {{ menuItem.icon }}
+          </mat-icon>
+          <span matListItemTitle>{{ menuItem.label }}</span>
+          @if (menuItem.count) {
+          <span
+            matListItemMeta
+            class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-primary rounded-full"
+          >
+            {{ menuItem.count | async }}
+          </span>
+          }
+        </a>
+        }
+
+        <mat-divider class="my-2"></mat-divider>
+
+        <!-- Quick Actions -->
+        <h3
+          matSubheader
+          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          Quick Actions
+        </h3>
+        @for (action of quickActions; track action.id) {
+        <a
+          mat-list-item
+          (click)="onQuickAction(action.id)"
+          class="cursor-pointer"
+        >
+          <mat-icon matListItemIcon class="text-gray-400 dark:text-gray-500">
+            {{ action.icon }}
+          </mat-icon>
+          <span matListItemTitle>{{ action.label }}</span>
+        </a>
+        }
+
+        <mat-divider class="my-2"></mat-divider>
+
+        <!-- Theme Toggle -->
+        <h3
+          matSubheader
+          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          Appearance
+        </h3>
+        <mat-list-item class="cursor-pointer">
+          <mat-icon matListItemIcon class="text-gray-400 dark:text-gray-500">
+            {{ (isDarkMode$ | async) ? "dark_mode" : "light_mode" }}
+          </mat-icon>
+          <span matListItemTitle>
+            {{ (isDarkMode$ | async) ? "Dark Mode" : "Light Mode" }}
+          </span>
+          <mat-slide-toggle
+            matListItemMeta
+            [checked]="isDarkMode$ | async"
+            (toggleChange)="onThemeToggle()"
+            color="primary"
+            aria-label="Toggle dark mode"
+          >
+          </mat-slide-toggle>
+        </mat-list-item>
+
+        <mat-divider class="my-2"></mat-divider>
+
+        <!-- Settings -->
+        <h3
+          matSubheader
+          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+        >
+          Settings
+        </h3>
+        @for (setting of settingsMenu; track setting.id) {
+        <a
+          mat-list-item
+          (click)="onSettingsAction(setting.id)"
+          class="cursor-pointer"
+        >
+          <mat-icon matListItemIcon class="text-gray-400 dark:text-gray-500">
+            {{ setting.icon }}
+          </mat-icon>
+          <span matListItemTitle>{{ setting.label }}</span>
+        </a>
+        }
+      </mat-nav-list>
+
+      <!-- User Profile (Desktop) -->
+      @if ((isLessThanMD$ | async) === false) {
+      <mat-action-list class="mt-auto!">
+        @if (currentUser$ | async; as user) {
+        <button mat-list-item [matMenuTriggerFor]="userMenu">
+          <div
+            matListItemAvatar
+            class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-medium"
+          >
+            {{ user.username.charAt(0).toUpperCase() }}
+          </div>
+          <span matListItemTitle>{{ user.username }}</span>
+          <span matListItemLine>{{ user.email }}</span>
+          <mat-icon matListItemMeta>more_vert</mat-icon>
+        </button>
+        }
+      </mat-action-list>
+      }
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <!-- Mobile Header -->
+    @if (isLessThanMD$ | async) {
+    <mat-toolbar class="top-0 sticky z-10 shadow-sm bg-background">
+      <button
+        type="button"
+        aria-label="Toggle sidenav"
+        mat-icon-button
+        (click)="drawer.toggle()"
+      >
+        <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+      </button>
+      <div class="flex items-center space-x-2">
+        <div
+          class="w-6 h-6 bg-primary rounded flex items-center justify-center"
+        >
+          <mat-icon class="text-white text-sm">check_box</mat-icon>
+        </div>
+        <span class="font-semibold">TodoApp</span>
+      </div>
+      <span class="flex-1"></span>
+      @if (currentUser$ | async; as user) {
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="userMenu"
+        class="custom-avatar-button"
+      >
+        <div
+          class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-medium text-sm"
+        >
+          {{ user.username.charAt(0).toUpperCase() }}
+        </div>
+      </button>
+      }
+    </mat-toolbar>
+    }
+
+    <!-- Main Content -->
+    <main class="h-[calc(100dvh-64px)] md:h-full relative overflow-auto">
+      <div class="p-4 md:p-6 max-w-4xl mx-auto">
+        <!-- Page Header -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                @switch (selectedFilter) { @case ('pending') { Pending Todos }
+                @case ('in_progress') { In Progress } @case ('completed') {
+                Completed Todos } @default { All Todos } }
+              </h1>
+              <p class="text-gray-600 dark:text-gray-400 mt-1">
+                @switch (selectedFilter) { @case ('pending') { Tasks waiting to
+                be started } @case ('in_progress') { Tasks currently being
+                worked on } @case ('completed') { Finished tasks } @default {
+                Manage all your tasks in one place } }
+              </p>
+            </div>
+            <button
+              mat-fab
+              color="primary"
+              (click)="onQuickAction('add')"
+              class="md:hidden"
+              aria-label="Add todo"
+            >
+              <mat-icon>add</mat-icon>
+            </button>
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="onQuickAction('add')"
+              class="hidden md:flex"
+            >
+              <mat-icon class="mr-2">add</mat-icon>
+              Add Todo
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div
+            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center">
+              <mat-icon class="text-gray-500 mr-2">list</mat-icon>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ (todos$ | async)?.length || 0 }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center">
+              <mat-icon class="text-orange-500 mr-2">schedule</mat-icon>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ pendingCount$ | async }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center">
+              <mat-icon class="text-blue-500 mr-2">play_circle</mat-icon>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  In Progress
+                </p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ inProgressCount$ | async }}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div
+            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center">
+              <mat-icon class="text-green-500 mr-2">check_circle</mat-icon>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                  Completed
+                </p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ completedCount$ | async }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Todos List -->
+        <div class="space-y-4">
+          @if (filteredTodos$ | async; as todos) { @if (todos.length === 0) {
+          <div class="text-center py-12">
+            <mat-icon class="text-6xl text-gray-300 dark:text-gray-600 mb-4"
+              >inbox</mat-icon
+            >
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              @switch (selectedFilter) { @case ('pending') { No pending todos }
+              @case ('in_progress') { No todos in progress } @case ('completed')
+              { No completed todos } @default { No todos yet } }
+            </h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6">
+              @switch (selectedFilter) { @case ('pending') { All your pending
+              tasks will appear here } @case ('in_progress') { Tasks you're
+              working on will show up here } @case ('completed') { Your finished
+              tasks will be listed here } @default { Get started by creating
+              your first todo } }
+            </p>
+            @if (selectedFilter === 'all') {
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="onQuickAction('add')"
+            >
+              <mat-icon class="mr-2">add</mat-icon>
+              Create your first todo
+            </button>
+            }
+          </div>
+          } @else { @for (todo of todos; track todo.id) {
+          <mat-card
+            class="hover:shadow-md transition-shadow duration-200 bg-white dark:bg-gray-800"
+          >
+            <mat-card-content class="p-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1 min-w-0">
+                  <!-- Todo Title and Description -->
+                  <div class="flex items-start space-x-3">
+                    <mat-icon
+                      [class]="getStatusColor(todo.status)"
+                      class="mt-1 flex-shrink-0"
+                    >
+                      {{ getStatusIcon(todo.status) }}
+                    </mat-icon>
+                    <div class="flex-1 min-w-0">
+                      <h3
+                        class="text-lg font-medium text-gray-900 dark:text-white truncate"
+                      >
+                        {{ todo.description }}
+                      </h3>
+                      <div class="flex items-center space-x-4 mt-2">
+                        <!-- Status Chip -->
+                        <span
+                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{
+                            getStatusChipColor(todo.status)
+                          }}"
+                        >
+                          {{ todo.status.replace("_", " ") }}
+                        </span>
+
+                        <!-- Due Date -->
+                        @if (todo.dueDate) {
+                        <div class="flex items-center space-x-1">
+                          <mat-icon
+                            class="text-sm {{ getDueDateColor(todo.dueDate) }}"
+                            >schedule</mat-icon
+                          >
+                          <span
+                            class="text-sm {{ getDueDateColor(todo.dueDate) }}"
+                          >
+                            {{ formatDueDate(todo.dueDate) }}
+                          </span>
+                        </div>
+                        }
+
+                        <!-- Estimated Time -->
+                        @if (todo.estimatedTime) {
+                        <div class="flex items-center space-x-1">
+                          <mat-icon class="text-sm text-gray-500"
+                            >timer</mat-icon
+                          >
+                          <span class="text-sm text-gray-500">
+                            {{ todo.estimatedTime }}h
+                          </span>
+                        </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Todo Actions -->
+                <div class="flex items-center space-x-2 ml-4">
+                  <!-- Quick Status Actions -->
+                  @if (todo.status === 'PENDING') {
+                  <button
+                    mat-icon-button
+                    (click)="onStartWorking(todo)"
+                    matTooltip="Start working"
+                    class="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  >
+                    <mat-icon>play_circle</mat-icon>
+                  </button>
+                  } @if (todo.status === 'IN_PROGRESS') {
+                  <button
+                    mat-icon-button
+                    (click)="onMarkAsComplete(todo)"
+                    matTooltip="Mark as complete"
+                    class="text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
+                  >
+                    <mat-icon>check_circle</mat-icon>
+                  </button>
+                  } @if (todo.status === 'COMPLETED') {
+                  <button
+                    mat-icon-button
+                    (click)="onMarkAsPending(todo)"
+                    matTooltip="Mark as pending"
+                    class="text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                  >
+                    <mat-icon>undo</mat-icon>
+                  </button>
+                  }
+
+                  <!-- More Actions Menu -->
+                  <button
+                    mat-icon-button
+                    [matMenuTriggerFor]="todoMenu"
+                    [matMenuTriggerData]="{ todo: todo }"
+                    matTooltip="More actions"
+                    class="text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+          } } }
+        </div>
+      </div>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+<!-- User Menu -->
+<mat-menu #userMenu="matMenu">
+  @if (currentUser$ | async; as user) {
+  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center space-x-3">
+      <div
+        class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-medium"
+      >
+        {{ user.username.charAt(0).toUpperCase() }}
+      </div>
+      <div>
+        <p class="text-sm font-medium text-gray-900 dark:text-white">
+          {{ user.username }}
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+      </div>
+    </div>
+  </div>
+  }
+  <button mat-menu-item (click)="onProfile()">
+    <mat-icon>person</mat-icon>
+    <span>Profile</span>
+  </button>
+  <button mat-menu-item (click)="onSettingsAction('preferences')">
+    <mat-icon>settings</mat-icon>
+    <span>Settings</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="onLogout()" class="text-red-600">
+    <mat-icon>logout</mat-icon>
+    <span>Sign out</span>
+  </button>
+</mat-menu>
+
+<!-- Todo Action Menu -->
+<mat-menu #todoMenu="matMenu">
+  <ng-template matMenuContent let-todo="todo">
+    <button mat-menu-item (click)="onEditTodo(todo)">
+      <mat-icon>edit</mat-icon>
+      <span>Edit</span>
+    </button>
+    @if (todo.status !== 'COMPLETED') {
+    <button mat-menu-item (click)="onMarkAsComplete(todo)">
+      <mat-icon>check_circle</mat-icon>
+      <span>Mark as Complete</span>
+    </button>
+    } @if (todo.status === 'PENDING') {
+    <button mat-menu-item (click)="onStartWorking(todo)">
+      <mat-icon>play_circle</mat-icon>
+      <span>Start Working</span>
+    </button>
+    } @if (todo.status === 'COMPLETED') {
+    <button mat-menu-item (click)="onMarkAsPending(todo)">
+      <mat-icon>undo</mat-icon>
+      <span>Mark as Pending</span>
+    </button>
+    }
+    <mat-divider></mat-divider>
+    <button mat-menu-item class="text-red-600" (click)="onDeleteTodo(todo)">
+      <mat-icon>delete</mat-icon>
+      <span>Delete</span>
+    </button>
+  </ng-template>
+</mat-menu>
