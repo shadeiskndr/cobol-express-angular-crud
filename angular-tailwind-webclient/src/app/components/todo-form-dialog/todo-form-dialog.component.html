@@ -12,9 +12,9 @@
     </button>
   </h2>
 
-  <mat-dialog-content class="space-y-4">
+  <mat-dialog-content class="space-y-6">
     <!-- Description Field -->
-    <mat-form-field appearance="outline" class="w-full">
+    <mat-form-field appearance="outline" class="w-full pt-2">
       <mat-label>Todo Description</mat-label>
       <textarea
         matInput
@@ -24,7 +24,7 @@
         maxlength="255"
       >
       </textarea>
-      <mat-icon matPrefix class="mr-2 text-gray-400">description</mat-icon>
+      <mat-icon matPrefix class="mr-2" [style.color]="'var(--mdc-theme-on-surface-variant)'">description</mat-icon>
       <mat-hint align="end">
         {{ todoForm.get("description")?.value?.length || 0 }}/255
       </mat-hint>
@@ -67,7 +67,7 @@
         </mat-option>
         }
       </mat-select>
-      <mat-icon matPrefix class="mr-2 text-gray-400">flag</mat-icon>
+      <mat-icon matPrefix class="mr-2" [style.color]="'var(--mdc-theme-on-surface-variant)'">flag</mat-icon>
       @if ((todoForm.get('status')?.touched || todoForm.get('status')?.dirty) &&
       todoForm.get('status')?.hasError('required')) {
       <mat-error>
@@ -86,7 +86,7 @@
         formControlName="dueDate"
         placeholder="Select due date"
       />
-      <mat-icon matPrefix class="mr-2 text-gray-400">event</mat-icon>
+      <mat-icon matPrefix class="mr-2" [style.color]="'var(--mdc-theme-on-surface-variant)'">event</mat-icon>
       <mat-datepicker-toggle
         matIconSuffix
         [for]="dueDatePicker"
@@ -101,7 +101,7 @@
         aria-label="Clear due date"
         class="mr-12"
       >
-        <mat-icon class="text-gray-400">clear</mat-icon>
+        <mat-icon [style.color]="'var(--mdc-theme-on-surface-variant)'">clear</mat-icon>
       </button>
       }
       <mat-hint>When should this be completed?</mat-hint>
@@ -109,7 +109,7 @@
 
     <!-- Estimated Time Field -->
     <div class="space-y-3">
-      <label class="block text-sm font-medium text-gray-700">
+      <label class="block text-sm font-medium" [style.color]="'var(--mdc-theme-on-surface)'">
         Estimated Time (Optional)
       </label>
 
@@ -135,12 +135,13 @@
       <!-- Custom Time Slider -->
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-600">Custom Duration</span>
+          <span class="text-sm" [style.color]="'var(--mdc-theme-on-surface-variant)'">Custom Duration</span>
           @if (todoForm.get('estimatedTime')?.value) {
           <button
             type="button"
             mat-button
-            class="text-xs text-gray-500"
+            class="text-xs"
+            [style.color]="'var(--mdc-theme-on-surface-variant)'"
             (click)="onClearEstimatedTime()"
           >
             Clear
@@ -159,7 +160,7 @@
             max="100"
             step="0.5"
           />
-          <mat-icon matPrefix class="mr-2 text-gray-400">timer</mat-icon>
+          <mat-icon matPrefix class="mr-2" [style.color]="'var(--mdc-theme-on-surface-variant)'">timer</mat-icon>
           <mat-hint>Enter hours (0.5 - 100)</mat-hint>
           @if ((todoForm.get('estimatedTime')?.touched ||
           todoForm.get('estimatedTime')?.dirty) &&
@@ -182,9 +183,9 @@
 
     <!-- Form Summary -->
     @if (todoForm.valid) {
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-      <h4 class="text-sm font-medium text-blue-900 mb-2">Summary</h4>
-      <div class="space-y-1 text-sm text-blue-800">
+    <div class="rounded-lg p-4 mt-4" [style]="{'background-color': 'var(--mdc-theme-primary-container)', 'border': '1px solid var(--mdc-theme-outline-variant)'}">
+      <h4 class="text-sm font-medium mb-2" [style.color]="'var(--mdc-theme-on-primary-container)'">Summary</h4>
+      <div class="space-y-1 text-sm" [style.color]="'var(--mdc-theme-on-primary-container)'">
         <div>
           <strong>Task:</strong> {{ todoForm.get("description")?.value }}
         </div>
@@ -214,24 +215,28 @@
       mat-button
       (click)="onCancel()"
       [disabled]="isLoading()"
+      class="mr-2"
     >
       Cancel
     </button>
 
-    <button
-      type="submit"
-      mat-flat-button
-      color="primary"
-      [disabled]="!todoForm.valid || isLoading()"
-      class="min-w-[120px]"
-    >
-      @if (isLoading()) {
-      <mat-icon class="animate-spin mr-2">refresh</mat-icon>
-      {{ isEditMode ? "Updating..." : "Creating..." }}
-      } @else {
-      <mat-icon class="mr-2">{{ isEditMode ? "save" : "add" }}</mat-icon>
-      {{ submitButtonText }}
-      }
-    </button>
+    <div class="flex justify-center w-auto">
+      <button
+        type="submit"
+        mat-raised-button
+        color="primary"
+        [disabled]="!todoForm.valid || isLoading()"
+        class="flex items-center justify-center w-40"
+      >
+        <mat-icon class="text-lg">{{ isLoading() ? "hourglass_top" : (isEditMode ? "edit" : "add") }}</mat-icon>
+        <span class="text-sm font-medium">
+          @if (isLoading()) {
+            {{ isEditMode ? "Updating..." : "Creating..." }}
+          } @else {
+            {{ submitButtonText }}
+          }
+        </span>
+      </button>
+    </div>
   </mat-dialog-actions>
 </form>

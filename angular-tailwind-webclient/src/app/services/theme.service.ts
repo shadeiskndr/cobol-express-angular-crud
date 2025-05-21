@@ -1,32 +1,53 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, signal, effect, computed } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ThemeService {
-  private darkMode = new BehaviorSubject<boolean>(this.getInitialTheme());
-  public darkMode$ = this.darkMode.asObservable();
+  private static readonly AVAILABLE_COLOR_THEMES = ['purple', 'ocean']; // Add more color themes here
+  
+  private _colorTheme = signal<string>(this.getInitialColorTheme());
+  private _darkMode = signal<boolean>(this.getInitialDarkMode());
+  
+  public colorTheme = this._colorTheme.asReadonly();
+  public darkMode = this._darkMode.asReadonly();
+  public currentTheme = computed(() => `${this._colorTheme()}-${this._darkMode() ? 'dark' : 'light'}`);
 
   constructor() {
     // Apply initial theme
-    this.applyTheme(this.darkMode.value);
+    this.applyTheme();
+
+    // React to theme changes using effect
+    effect(() => {
+      this.applyTheme();
+    });
 
     // Listen for changes in system preference
     window
       .matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', (e) => {
         if (!this.hasStoredPreference()) {
-          this.setTheme(e.matches);
+          this._darkMode.set(e.matches);
         }
       });
   }
 
-  private getInitialTheme(): boolean {
+  private getInitialColorTheme(): string {
     // Check if user has a stored preference
-    const storedTheme = localStorage.getItem('theme');
-    if (storedTheme) {
-      return storedTheme === 'dark';
+    const storedColorTheme = localStorage.getItem('colorTheme');
+    if (storedColorTheme && ThemeService.AVAILABLE_COLOR_THEMES.includes(storedColorTheme)) {
+      return storedColorTheme;
+    }
+
+    // Fall back to first available color theme
+    return ThemeService.AVAILABLE_COLOR_THEMES[0];
+  }
+
+  private getInitialDarkMode(): boolean {
+    // Check if user has a stored preference
+    const storedDarkMode = localStorage.getItem('darkMode');
+    if (storedDarkMode !== null) {
+      return storedDarkMode === 'true';
     }
 
     // Fall back to system preference
@@ -34,7 +55,7 @@ export class ThemeService {
   }
 
   private hasStoredPreference(): boolean {
-    return localStorage.getItem('theme') !== null;
+    return localStorage.getItem('darkMode') !== null || localStorage.getItem('colorTheme') !== null;
   }
 
   private prefersDarkMode(): boolean {
@@ -44,34 +65,40 @@ export class ThemeService {
     );
   }
 
-  private applyTheme(isDark: boolean): void {
+  private applyTheme(): void {
     const htmlElement = document.documentElement;
-
-    if (isDark) {
-      htmlElement.classList.add('dark');
-      htmlElement.style.colorScheme = 'dark';
-    } else {
-      htmlElement.classList.remove('dark');
-      htmlElement.style.colorScheme = 'light';
-    }
-  }
-
-  private setTheme(isDark: boolean): void {
-    this.darkMode.next(isDark);
-    this.applyTheme(isDark);
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    const theme = this.currentTheme();
+    htmlElement.setAttribute('data-theme', theme);
+    htmlElement.style.colorScheme = this._darkMode() ? 'dark' : 'light';
   }
 
   toggleTheme(): void {
-    const newTheme = !this.darkMode.value;
-    this.setTheme(newTheme);
+    const newDarkMode = !this._darkMode();
+    this._darkMode.set(newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
+  }
+
+  setColorTheme(colorTheme: string): void {
+    if (ThemeService.AVAILABLE_COLOR_THEMES.includes(colorTheme)) {
+      this._colorTheme.set(colorTheme);
+      localStorage.setItem('colorTheme', colorTheme);
+    }
   }
 
   setDarkMode(isDark: boolean): void {
-    this.setTheme(isDark);
+    this._darkMode.set(isDark);
+    localStorage.setItem('darkMode', isDark.toString());
   }
 
-  getCurrentTheme(): 'light' | 'dark' {
-    return this.darkMode.value ? 'dark' : 'light';
+  getCurrentTheme(): string {
+    return this.currentTheme();
+  }
+
+  getCurrentColorTheme(): string {
+    return this._colorTheme();
+  }
+
+  getAvailableColorThemes(): string[] {
+    return ThemeService.AVAILABLE_COLOR_THEMES;
   }
 }

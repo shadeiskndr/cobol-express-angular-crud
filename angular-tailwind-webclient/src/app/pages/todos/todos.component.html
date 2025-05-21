@@ -30,11 +30,11 @@
         }
       </mat-toolbar>
 
-      <!-- Main Navigation -->
+        <!-- Main Navigation -->
       <mat-nav-list>
         <h3
           matSubheader
-          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+          class="text-sm font-medium text-on-surface-variant"
         >
           Todos
         </h3>
@@ -51,19 +51,19 @@
               classNames(
                 menuItem.isActive
                   ? 'icon-filled text-primary!'
-                  : 'text-gray-400! dark:text-gray-500!'
+                  : 'text-on-surface-variant!'
               )
             "
           >
             {{ menuItem.icon }}
           </mat-icon>
           <span matListItemTitle>{{ menuItem.label }}</span>
-          @if (menuItem.count) {
+          @if (menuItem.getCount) {
           <span
             matListItemMeta
-            class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-primary rounded-full"
+            class="inline-flex items-center justify-center px-2 py-1 leading-none bg-secondary-container rounded-full"
           >
-            {{ menuItem.count | async }}
+            {{ menuItem.getCount() }}
           </span>
           }
         </a>
@@ -74,7 +74,7 @@
         <!-- Quick Actions -->
         <h3
           matSubheader
-          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+          class="text-sm font-medium text-on-surface-variant"
         >
           Quick Actions
         </h3>
@@ -84,7 +84,7 @@
           (click)="onQuickAction(action.id)"
           class="cursor-pointer"
         >
-          <mat-icon matListItemIcon class="text-gray-400 dark:text-gray-500">
+          <mat-icon matListItemIcon class="text-on-surface-variant">
             {{ action.icon }}
           </mat-icon>
           <span matListItemTitle>{{ action.label }}</span>
@@ -96,20 +96,27 @@
         <!-- Theme Toggle -->
         <h3
           matSubheader
-          class="text-sm font-medium text-gray-500 dark:text-gray-400"
+          class="text-sm font-medium text-on-surface-variant"
         >
           Appearance
         </h3>
+        <mat-list-item class="cursor-pointer" (click)="cycleColorTheme()">
+          <mat-icon matListItemIcon class="text-on-surface-variant">
+            palette
+          </mat-icon>
+          <span matListItemTitle>{{ colorTheme() | titlecase }} Theme</span>
+        </mat-list-item>
+
         <mat-list-item class="cursor-pointer">
-          <mat-icon matListItemIcon class="text-gray-400 dark:text-gray-500">
-            {{ (isDarkMode$ | async) ? "dark_mode" : "light_mode" }}
+          <mat-icon matListItemIcon class="text-on-surface-variant">
+            {{ isDarkMode() ? "dark_mode" : "light_mode" }}
           </mat-icon>
           <span matListItemTitle>
-            {{ (isDarkMode$ | async) ? "Dark Mode" : "Light Mode" }}
+            {{ isDarkMode() ? "Dark Mode" : "Light Mode" }}
           </span>
           <mat-slide-toggle
             matListItemMeta
-            [checked]="isDarkMode$ | async"
+            [checked]="isDarkMode()"
             (toggleChange)="onThemeToggle()"
             color="primary"
             aria-label="Toggle dark mode"
@@ -118,26 +125,6 @@
         </mat-list-item>
 
         <mat-divider class="my-2"></mat-divider>
-
-        <!-- Settings -->
-        <h3
-          matSubheader
-          class="text-sm font-medium text-gray-500 dark:text-gray-400"
-        >
-          Settings
-        </h3>
-        @for (setting of settingsMenu; track setting.id) {
-        <a
-          mat-list-item
-          (click)="onSettingsAction(setting.id)"
-          class="cursor-pointer"
-        >
-          <mat-icon matListItemIcon class="text-gray-400 dark:text-gray-500">
-            {{ setting.icon }}
-          </mat-icon>
-          <span matListItemTitle>{{ setting.label }}</span>
-        </a>
-        }
       </mat-nav-list>
 
       <!-- User Profile (Desktop) -->
@@ -182,6 +169,26 @@
         <span class="font-semibold">TodoApp</span>
       </div>
       <span class="flex-1"></span>
+      <div class="flex items-center gap-1">
+        <!-- Color Theme Cycle Button -->
+        <button
+          mat-icon-button
+          (click)="cycleColorTheme()"
+          class="text-on-surface"
+          [attr.aria-label]="'Cycle color theme. Current: ' + colorTheme()"
+        >
+          <mat-icon>palette</mat-icon>
+        </button>
+        <!-- Dark/Light Mode Toggle -->
+        <button
+          mat-icon-button
+          (click)="onThemeToggle()"
+          class="text-on-surface"
+          [attr.aria-label]="isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
+        >
+          <mat-icon>{{ isDarkMode() ? "light_mode" : "dark_mode" }}</mat-icon>
+        </button>
+      </div>
       @if (currentUser$ | async; as user) {
       <button
         mat-icon-button
@@ -205,27 +212,18 @@
         <div class="mb-6">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                @switch (selectedFilter) { @case ('pending') { Pending Todos }
-                @case ('in_progress') { In Progress } @case ('completed') {
-                Completed Todos } @default { All Todos } }
-              </h1>
-              <p class="text-gray-600 dark:text-gray-400 mt-1">
-                @switch (selectedFilter) { @case ('pending') { Tasks waiting to
-                be started } @case ('in_progress') { Tasks currently being
-                worked on } @case ('completed') { Finished tasks } @default {
-                Manage all your tasks in one place } }
-              </p>
+              <h1 class="text-2xl font-bold text-on-background">
+                    @switch (selectedFilter()) { @case ('pending') { Pending Todos }
+                    @case ('in_progress') { In Progress } @case ('completed') {
+                    Completed Todos } @default { All Todos } }
+                  </h1>
+                  <p class="text-on-surface-variant mt-1">
+                    @switch (selectedFilter()) { @case ('pending') { Tasks waiting to
+                    be started } @case ('in_progress') { Tasks currently being
+                    worked on } @case ('completed') { Finished tasks } @default {
+                    Manage all your tasks in one place } }
+                  </p>
             </div>
-            <button
-              mat-fab
-              color="primary"
-              (click)="onQuickAction('add')"
-              class="md:hidden"
-              aria-label="Add todo"
-            >
-              <mat-icon>add</mat-icon>
-            </button>
             <button
               mat-raised-button
               color="primary"
@@ -241,57 +239,57 @@
         <!-- Filter Stats -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div
-            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+            class="bg-surface-container rounded-lg p-4 border border-outline-variant"
           >
             <div class="flex items-center">
-              <mat-icon class="text-gray-500 mr-2">list</mat-icon>
+              <mat-icon class="text-on-surface-variant mr-2">list</mat-icon>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Total</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ (todos$ | async)?.length || 0 }}
-                </p>
+                <p class="text-sm text-on-surface-variant">Total</p>
+                <p class="text-2xl font-bold text-on-surface">
+                    {{ todos$().length || 0 }}
+                  </p>
               </div>
             </div>
           </div>
           <div
-            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+            class="bg-surface-container rounded-lg p-4 border border-outline-variant"
           >
             <div class="flex items-center">
-              <mat-icon class="text-orange-500 mr-2">schedule</mat-icon>
+              <mat-icon class="text-tertiary mr-2">schedule</mat-icon>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ pendingCount$ | async }}
-                </p>
-              </div>
+                    <p class="text-sm text-on-surface-variant">Pending</p>
+                    <p class="text-2xl font-bold text-on-surface">
+                      {{ pendingCount() }}
+                    </p>
+                  </div>
             </div>
           </div>
           <div
-            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+            class="bg-surface-container rounded-lg p-4 border border-outline-variant"
           >
             <div class="flex items-center">
-              <mat-icon class="text-blue-500 mr-2">play_circle</mat-icon>
+              <mat-icon class="text-secondary mr-2">play_circle</mat-icon>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
+                <p class="text-sm text-on-surface-variant">
                   In Progress
                 </p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ inProgressCount$ | async }}
+                <p class="text-2xl font-bold text-on-surface">
+                  {{ inProgressCount() }}
                 </p>
               </div>
             </div>
           </div>
           <div
-            class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+            class="bg-surface-container rounded-lg p-4 border border-outline-variant"
           >
             <div class="flex items-center">
-              <mat-icon class="text-green-500 mr-2">check_circle</mat-icon>
+              <mat-icon class="text-primary mr-2">check_circle</mat-icon>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
+                <p class="text-sm text-on-surface-variant">
                   Completed
                 </p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ completedCount$ | async }}
+                <p class="text-2xl font-bold text-on-surface">
+                  {{ completedCount() }}
                 </p>
               </div>
             </div>
@@ -300,24 +298,24 @@
 
         <!-- Todos List -->
         <div class="space-y-4">
-          @if (filteredTodos$ | async; as todos) { @if (todos.length === 0) {
+          @if ((filteredTodos()).length === 0) {
           <div class="text-center py-12">
-            <mat-icon class="text-6xl text-gray-300 dark:text-gray-600 mb-4"
+            <mat-icon class="text-6xl text-outline-variant mb-4"
               >inbox</mat-icon
             >
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              @switch (selectedFilter) { @case ('pending') { No pending todos }
+            <h3 class="text-lg font-medium text-on-surface mb-2">
+              @switch (selectedFilter()) { @case ('pending') { No pending todos }
               @case ('in_progress') { No todos in progress } @case ('completed')
               { No completed todos } @default { No todos yet } }
             </h3>
-            <p class="text-gray-500 dark:text-gray-400 mb-6">
-              @switch (selectedFilter) { @case ('pending') { All your pending
+            <p class="text-on-surface-variant mb-6">
+              @switch (selectedFilter()) { @case ('pending') { All your pending
               tasks will appear here } @case ('in_progress') { Tasks you're
               working on will show up here } @case ('completed') { Your finished
               tasks will be listed here } @default { Get started by creating
               your first todo } }
             </p>
-            @if (selectedFilter === 'all') {
+            @if (selectedFilter() === 'all') {
             <button
               mat-raised-button
               color="primary"
@@ -328,9 +326,9 @@
             </button>
             }
           </div>
-          } @else { @for (todo of todos; track todo.id) {
+          } @else { @for (todo of filteredTodos(); track todo.id) {
           <mat-card
-            class="hover:shadow-md transition-shadow duration-200 bg-white dark:bg-gray-800"
+            class="hover:shadow-md transition-shadow duration-200 bg-surface-container"
           >
             <mat-card-content class="p-4">
               <div class="flex items-start justify-between">
@@ -345,7 +343,7 @@
                     </mat-icon>
                     <div class="flex-1 min-w-0">
                       <h3
-                        class="text-lg font-medium text-gray-900 dark:text-white truncate"
+                        class="text-lg font-medium text-on-surface truncate"
                       >
                         {{ todo.description }}
                       </h3>
@@ -377,10 +375,10 @@
                         <!-- Estimated Time -->
                         @if (todo.estimatedTime) {
                         <div class="flex items-center space-x-1">
-                          <mat-icon class="text-sm text-gray-500"
+                          <mat-icon class="text-sm text-on-surface-variant"
                             >timer</mat-icon
                           >
-                          <span class="text-sm text-gray-500">
+                          <span class="text-sm text-on-surface-variant">
                             {{ todo.estimatedTime }}h
                           </span>
                         </div>
@@ -398,7 +396,7 @@
                     mat-icon-button
                     (click)="onStartWorking(todo)"
                     matTooltip="Start working"
-                    class="text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    class="text-secondary hover:bg-secondary-container/20"
                   >
                     <mat-icon>play_circle</mat-icon>
                   </button>
@@ -407,7 +405,7 @@
                     mat-icon-button
                     (click)="onMarkAsComplete(todo)"
                     matTooltip="Mark as complete"
-                    class="text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20"
+                    class="text-primary hover:bg-primary-container/20"
                   >
                     <mat-icon>check_circle</mat-icon>
                   </button>
@@ -416,7 +414,7 @@
                     mat-icon-button
                     (click)="onMarkAsPending(todo)"
                     matTooltip="Mark as pending"
-                    class="text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                    class="text-tertiary hover:bg-tertiary-container/20"
                   >
                     <mat-icon>undo</mat-icon>
                   </button>
@@ -428,7 +426,7 @@
                     [matMenuTriggerFor]="todoMenu"
                     [matMenuTriggerData]="{ todo: todo }"
                     matTooltip="More actions"
-                    class="text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    class="text-on-surface-variant hover:bg-surface-container-high"
                   >
                     <mat-icon>more_vert</mat-icon>
                   </button>
@@ -436,7 +434,7 @@
               </div>
             </mat-card-content>
           </mat-card>
-          } } }
+          } }
         </div>
       </div>
     </main>
@@ -446,18 +444,18 @@
 <!-- User Menu -->
 <mat-menu #userMenu="matMenu">
   @if (currentUser$ | async; as user) {
-  <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+  <div class="px-4 py-3 border-b border-outline-variant">
     <div class="flex items-center space-x-3">
       <div
-        class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-medium"
+        class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-on-primary font-medium"
       >
         {{ user.username.charAt(0).toUpperCase() }}
       </div>
       <div>
-        <p class="text-sm font-medium text-gray-900 dark:text-white">
+        <p class="text-sm font-medium text-on-surface">
           {{ user.username }}
         </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+        <p class="text-sm text-on-surface-variant">{{ user.email }}</p>
       </div>
     </div>
   </div>
@@ -471,7 +469,7 @@
     <span>Settings</span>
   </button>
   <mat-divider></mat-divider>
-  <button mat-menu-item (click)="onLogout()" class="text-red-600">
+  <button mat-menu-item (click)="onLogout()" class="text-error">
     <mat-icon>logout</mat-icon>
     <span>Sign out</span>
   </button>
@@ -501,7 +499,7 @@
     </button>
     }
     <mat-divider></mat-divider>
-    <button mat-menu-item class="text-red-600" (click)="onDeleteTodo(todo)">
+    <button mat-menu-item class="text-error" (click)="onDeleteTodo(todo)">
       <mat-icon>delete</mat-icon>
       <span>Delete</span>
     </button>

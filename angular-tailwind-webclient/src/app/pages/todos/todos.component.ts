@@ -1,5 +1,5 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { AsyncPipe } from '@angular/common';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { AsyncPipe, TitleCasePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,8 +13,8 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 import { DeviceService } from '../../ngm-dev-blocks/utils/services/device.service';
 import { classNames } from '../../ngm-dev-blocks/utils/functions';
@@ -28,6 +28,19 @@ import {
   TodoFormDialogData,
   TodoFormDialogResult,
 } from '../../components/todo-form-dialog/todo-form-dialog.component';
+import {
+  TodoDeleteDialogComponent,
+  TodoDeleteDialogData,
+  TodoDeleteDialogResult,
+} from '../../components/todo-delete-dialog/todo-delete-dialog.component';
+import {
+  TodoSearchSheetComponent,
+  TodoSearchCriteria,
+} from '../../components/todo-search-sheet/todo-search-sheet.component';
+import {
+  TodoFilterSheetComponent,
+  TodoFilterOptions,
+} from '../../components/todo-filter-sheet/todo-filter-sheet.component';
 
 @Component({
   selector: 'app-todos',
@@ -44,6 +57,7 @@ import {
     MatBadgeModule,
     MatSlideToggleModule,
     AsyncPipe,
+    TitleCasePipe,
   ],
 })
 export class TodosComponent implements OnInit {
@@ -55,28 +69,40 @@ export class TodosComponent implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
+  private bottomSheet = inject(MatBottomSheet);
 
   readonly isLessThanMD$ = inject(DeviceService).isLessThanMD$;
-  readonly isDarkMode$ = this.themeService.darkMode$;
+  readonly isDarkMode = () => this.themeService.darkMode();
+  readonly colorTheme = () => this.themeService.colorTheme();
 
-  todos$!: Observable<Todo[]>;
+  todos$ = signal<Todo[]>([]);
   currentUser$!: Observable<User | null>;
 
   // Filter states
-  selectedFilter = 'all';
-  filteredTodos$!: Observable<Todo[]>;
+  selectedFilter = signal('all');
+  filteredTodos = computed(() => {
+    return this.filterTodos(this.todos$(), this.selectedFilter());
+  });
 
-  // Todo counts
-  pendingCount$!: Observable<number>;
-  inProgressCount$!: Observable<number>;
-  completedCount$!: Observable<number>;
+  // Todo counts using computed signals
+  pendingCount = computed(() => {
+    return this.todos$().filter((todo) => todo.status === 'PENDING').length;
+  });
+
+  inProgressCount = computed(() => {
+    return this.todos$().filter((todo) => todo.status === 'IN_PROGRESS').length;
+  });
+
+  completedCount = computed(() => {
+    return this.todos$().filter((todo) => todo.status === 'COMPLETED').length;
+  });
 
   readonly mainMenu: {
     label: string;
     id: string;
     icon: string;
     isActive?: boolean;
-    count?: Observable<number>;
+    getCount?: () => number;
   }[] = [
     {
       label: 'All Todos',
@@ -88,16 +114,19 @@ export class TodosComponent implements OnInit {
       label: 'Pending',
       id: 'pending',
       icon: 'schedule',
+      getCount: () => this.pendingCount(),
     },
     {
       label: 'In Progress',
       id: 'in_progress',
       icon: 'play_circle',
+      getCount: () => this.inProgressCount(),
     },
     {
       label: 'Completed',
       id: 'completed',
       icon: 'check_circle',
+      getCount: () => this.completedCount(),
     },
   ];
 
@@ -112,11 +141,11 @@ export class TodosComponent implements OnInit {
       id: 'search',
       icon: 'search',
     },
-    {
-      label: 'Filter',
-      id: 'filter',
-      icon: 'filter_list',
-    },
+    // {
+    //   label: 'Filter',
+    //   id: 'filter',
+    //   icon: 'filter_list',
+    // },
   ];
 
   readonly settingsMenu = [
@@ -140,39 +169,12 @@ export class TodosComponent implements OnInit {
   ngOnInit() {
     this.loadTodos();
     this.currentUser$ = this.authService.currentUser$;
-    this.setupFilters();
-    this.setupCounts();
   }
 
   loadTodos() {
-    this.todos$ = this.todoService.getTodos();
-  }
-
-  setupFilters() {
-    this.filteredTodos$ = this.todos$.pipe(
-      map((todos) => this.filterTodos(todos, this.selectedFilter))
-    );
-  }
-
-  setupCounts() {
-    this.pendingCount$ = this.todos$.pipe(
-      map((todos) => todos.filter((todo) => todo.status === 'PENDING').length)
-    );
-
-    this.inProgressCount$ = this.todos$.pipe(
-      map(
-        (todos) => todos.filter((todo) => todo.status === 'IN_PROGRESS').length
-      )
-    );
-
-    this.completedCount$ = this.todos$.pipe(
-      map((todos) => todos.filter((todo) => todo.status === 'COMPLETED').length)
-    );
-
-    // Update menu items with counts
-    this.mainMenu[1].count = this.pendingCount$;
-    this.mainMenu[2].count = this.inProgressCount$;
-    this.mainMenu[3].count = this.completedCount$;
+    this.todoService.getTodos().subscribe((todos) => {
+      this.todos$.set(todos);
+    });
   }
 
   filterTodos(todos: Todo[], filter: string): Todo[] {
@@ -189,9 +191,8 @@ export class TodosComponent implements OnInit {
   }
 
   onFilterChange(filterId: string) {
-    this.selectedFilter = filterId;
+    this.selectedFilter.set(filterId);
     this.mainMenu.forEach((item) => (item.isActive = item.id === filterId));
-    this.setupFilters();
   }
 
   onQuickAction(actionId: string) {
@@ -200,12 +201,10 @@ export class TodosComponent implements OnInit {
         this.openCreateTodoDialog();
         break;
       case 'search':
-        // Open search dialog
-        console.log('Search todos');
+        this.openSearchSheet();
         break;
       case 'filter':
-        // Open filter options
-        console.log('Filter todos');
+        this.openFilterSheet();
         break;
     }
   }
@@ -226,6 +225,12 @@ export class TodosComponent implements OnInit {
 
   onThemeToggle() {
     this.themeService.toggleTheme();
+  }
+
+  cycleColorTheme() {
+    const currentTheme = this.themeService.colorTheme();
+    const nextTheme = currentTheme === 'purple' ? 'ocean' : 'purple';
+    this.themeService.setColorTheme(nextTheme);
   }
 
   openCreateTodoDialog() {
@@ -326,28 +331,43 @@ export class TodosComponent implements OnInit {
   }
 
   deleteTodo(todo: Todo) {
-    if (confirm(`Are you sure you want to delete "${todo.description}"?`)) {
-      this.todoService.deleteTodo(todo.id).subscribe({
-        next: () => {
-          this.snackBar.open('Todo deleted successfully!', 'Close', {
-            duration: 3000,
-            panelClass: ['success-snackbar'],
+    const dialogData: TodoDeleteDialogData = {
+      todo: todo,
+    };
+
+    const dialogRef = this.dialog.open(TodoDeleteDialogComponent, {
+      width: '500px',
+      maxWidth: '90vw',
+      data: dialogData,
+      disableClose: true,
+    });
+
+    dialogRef
+      .afterClosed()
+      .subscribe((result: TodoDeleteDialogResult | undefined) => {
+        if (result?.action === 'delete') {
+          this.todoService.deleteTodo(todo.id).subscribe({
+            next: () => {
+              this.snackBar.open('Todo deleted successfully!', 'Close', {
+                duration: 3000,
+                panelClass: ['success-snackbar'],
+              });
+              this.loadTodos(); // Refresh the list
+            },
+            error: (error) => {
+              this.snackBar.open(
+                'Failed to delete todo. Please try again.',
+                'Close',
+                {
+                  duration: 5000,
+                  panelClass: ['error-snackbar'],
+                }
+              );
+              console.error('Error deleting todo:', error);
+            },
           });
-          this.loadTodos(); // Refresh the list
-        },
-        error: (error) => {
-          this.snackBar.open(
-            'Failed to delete todo. Please try again.',
-            'Close',
-            {
-              duration: 5000,
-              panelClass: ['error-snackbar'],
-            }
-          );
-          console.error('Error deleting todo:', error);
-        },
+        }
       });
-    }
   }
 
   // Action handlers for todo menu
@@ -433,6 +453,97 @@ export class TodosComponent implements OnInit {
     if (diffDays < 0) return 'text-red-500';
     if (diffDays <= 1) return 'text-orange-500';
     return 'text-gray-500';
+  }
+
+  openSearchSheet() {
+    const sheetRef = this.bottomSheet.open(TodoSearchSheetComponent, {
+      disableClose: false,
+    });
+
+    sheetRef.afterDismissed().subscribe((result) => {
+      if (result && Object.keys(result).length > 0) {
+        this.performSearch(result);
+      } else if (result && Object.keys(result).length === 0) {
+        // Clear was clicked, reload all todos
+        this.loadTodos();
+        this.selectedFilter.set('all');
+        this.snackBar.open('Search cleared - showing all todos', 'Close', {
+          duration: 3000,
+        });
+      }
+    });
+  }
+
+  performSearch(criteria: TodoSearchCriteria) {
+    this.todoService.searchTodos(criteria).subscribe({
+      next: (result: any) => {
+        const todos = result.todos || result;
+        this.todos$.set(Array.isArray(todos) ? todos : []);
+        this.snackBar.open(`Found ${this.todos$().length} todo(s)`, 'Close', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.snackBar.open('Search failed. Please try again.', 'Close', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error searching todos:', error);
+      },
+    });
+  }
+
+  openFilterSheet() {
+    const sheetRef = this.bottomSheet.open(TodoFilterSheetComponent, {
+      disableClose: false,
+    });
+
+    sheetRef.afterDismissed().subscribe((result) => {
+      if (result) {
+        this.applyFilters(result);
+      }
+    });
+  }
+
+  applyFilters(filters: TodoFilterOptions) {
+    // If no filters are applied (reset), reload all todos
+    if (
+      (!filters.statuses || filters.statuses.length === 0) &&
+      !filters.hasDueDate
+    ) {
+      this.loadTodos();
+      this.selectedFilter.set('all');
+      this.snackBar.open('Filters cleared - showing all todos', 'Close', {
+        duration: 3000,
+      });
+      return;
+    }
+
+    let filtered = this.todos$();
+
+    // Filter by status
+    if (filters.statuses && filters.statuses.length > 0) {
+      filtered = filtered.filter((todo) =>
+        filters.statuses!.includes(todo.status)
+      );
+    }
+
+    // Filter by due date existence
+    if (filters.hasDueDate) {
+      filtered = filtered.filter((todo) => todo.dueDate);
+    }
+
+    // Update the filtered todos by temporarily changing filter
+    this.selectedFilter.set('filtered');
+    this.todos$.set(filtered);
+
+    this.snackBar.open(
+      `Applied filters - ${filtered.length} todo(s)`,
+      'Close',
+      {
+        duration: 3000,
+      }
+    );
   }
 
   onLogout() {

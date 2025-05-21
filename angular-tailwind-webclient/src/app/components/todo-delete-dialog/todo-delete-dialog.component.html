@@ -1,0 +1,83 @@
+<div class="space-y-4">
+  <h2 mat-dialog-title class="relative flex items-center space-x-3">
+    <span>Delete Todo</span>
+    <button
+      mat-icon-button
+      aria-label="Close"
+      class="absolute! right-4"
+      (click)="onCancel()"
+      type="button"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </h2>
+
+  <mat-dialog-content class="space-y-4">
+    <!-- Warning Message -->
+    <div
+      class="rounded-lg p-4"
+      [style]="{
+        'background-color': 'var(--mdc-theme-error-container)',
+        'border': '1px solid var(--mdc-theme-error)'
+      }"
+    >
+      <p [style.color]="'var(--mdc-theme-on-error-container)'" class="text-sm">
+        This action cannot be undone. All data associated with this todo will be
+        permanently deleted.
+      </p>
+    </div>
+
+    <!-- Todo Details -->
+    <div
+      class="rounded-lg p-4 border"
+      [style]="{'border-color': 'var(--mdc-theme-outline-variant)'}"
+    >
+      <h4 class="text-sm font-semibold mb-2" [style.color]="'var(--mdc-theme-on-surface)'">
+        Todo to Delete:
+      </h4>
+      <div class="flex items-start space-x-3">
+        <mat-icon class="text-error text-lg flex-shrink-0">delete_outline</mat-icon>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium text-on-surface break-words">
+            {{ data.todo.description }}
+          </p>
+          <p class="text-sm mt-1" [style.color]="'var(--mdc-theme-on-surface-variant)'">
+            Status: <span class="font-medium capitalize">{{ data.todo.status.replace('_', ' ') }}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Text -->
+    <div class="space-y-2">
+      <p class="text-sm text-on-surface-variant">
+        Are you sure you want to permanently delete this todo?
+      </p>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="flex justify-between items-center">
+    <button
+      type="button"
+      mat-button
+      (click)="onCancel()"
+      [disabled]="isLoading()"
+    >
+      Keep Todo
+    </button>
+
+    <button
+      type="button"
+      mat-raised-button
+      color="warn"
+      (click)="onDelete()"
+      [disabled]="isLoading()"
+      class="flex items-center justify-center"
+    >
+      <mat-icon>{{ isLoading() ? "hourglass_top" : "delete" }}</mat-icon>
+      <span class="text-sm font-medium">
+        {{ isLoading() ? "Deleting..." : "Delete Todo" }}
+      </span>
+    </button>
+  </mat-dialog-actions>
+</div>

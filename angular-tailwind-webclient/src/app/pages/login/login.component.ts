@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
 import {
   ReactiveFormsModule,
   FormControl,
@@ -18,6 +19,7 @@ import {
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/user';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-login',
@@ -29,6 +31,7 @@ import { LoginRequest } from '../../models/user';
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     ReactiveFormsModule,
     MatIconModule,
     NgOptimizedImage,
@@ -37,6 +40,7 @@ import { LoginRequest } from '../../models/user';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private themeService = inject(ThemeService);
 
   form = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -48,6 +52,17 @@ export class LoginComponent {
 
   isLoading = false;
   errorMessage = '';
+
+  isDarkMode = this.themeService.darkMode;
+  colorTheme = this.themeService.colorTheme;
+
+  onThemeToggle() {
+    this.themeService.toggleTheme();
+  }
+
+  onColorThemeChange(colorTheme: string) {
+    this.themeService.setColorTheme(colorTheme);
+  }
 
   onSubmit() {
     if (this.form.valid && !this.isLoading) {

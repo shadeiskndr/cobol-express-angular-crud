@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
 import {
   ReactiveFormsModule,
   FormControl,
@@ -19,6 +20,7 @@ import {
 import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { RegisterRequest } from '../../models/user';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-register',
@@ -30,6 +32,7 @@ import { RegisterRequest } from '../../models/user';
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     ReactiveFormsModule,
     MatIconModule,
     NgOptimizedImage,
@@ -38,6 +41,18 @@ import { RegisterRequest } from '../../models/user';
 export class RegisterComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private themeService = inject(ThemeService);
+
+  isDarkMode = this.themeService.darkMode;
+  colorTheme = this.themeService.colorTheme;
+
+  onThemeToggle() {
+    this.themeService.toggleTheme();
+  }
+
+  onColorThemeChange(colorTheme: string) {
+    this.themeService.setColorTheme(colorTheme);
+  }
 
   form = new FormGroup(
     {

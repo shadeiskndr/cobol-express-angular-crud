@@ -5,8 +5,11 @@
 @use "@angular/material" as mat;
 
 
-/* Light Theme */
-:root, :host {
+/* Purple Light Theme */
+:root[data-theme="purple-light"],
+:host[data-theme="purple-light"],
+:root:not([data-theme]),
+:host:not([data-theme]) {
   @include mat.theme-overrides((
     primary: #6750a4,
     on-primary: #ffffff,
@@ -66,8 +69,9 @@
   ));
 }
 
-/* Dark Theme */
-.dark-theme {
+/* Purple Dark Theme */
+:root[data-theme="purple-dark"],
+:host[data-theme="purple-dark"] {
   @include mat.theme-overrides((
     primary: #cfbcff,
     on-primary: #381e72,
@@ -124,5 +128,129 @@
     neutral-variant20: #322f34,
     inverse-secondary: #625b70,
     inverse-tertiary: #7e5260,
+  ));
+}
+
+/* Ocean Light Theme */
+:root[data-theme="ocean-light"],
+:host[data-theme="ocean-light"] {
+  @include mat.theme-overrides((
+    primary: #0066cc,
+    on-primary: #ffffff,
+    primary-container: #cce5ff,
+    on-primary-container: #001f5c,
+    inverse-primary: #99caff,
+    primary-fixed: #cce5ff,
+    primary-fixed-dim: #99caff,
+    on-primary-fixed: #001f5c,
+    on-primary-fixed-variant: #0050b3,
+    secondary: #0088cc,
+    on-secondary: #ffffff,
+    secondary-container: #ccebff,
+    on-secondary-container: #002e66,
+    secondary-fixed: #ccebff,
+    secondary-fixed-dim: #99d5ff,
+    on-secondary-fixed: #002e66,
+    on-secondary-fixed-variant: #0067b3,
+    tertiary: #00a8cc,
+    on-tertiary: #ffffff,
+    tertiary-container: #ccf0ff,
+    on-tertiary-container: #004466,
+    tertiary-fixed: #ccf0ff,
+    tertiary-fixed-dim: #99dbff,
+    on-tertiary-fixed: #004466,
+    on-tertiary-fixed-variant: #0088b3,
+    background: #f5f5f5,
+    on-background: #1a1a1a,
+    surface: #f5f5f5,
+    surface-dim: #d9d9d9,
+    surface-bright: #f5f5f5,
+    surface-container-lowest: #ffffff,
+    surface-container-low: #efefef,
+    surface-container: #e9e9e9,
+    surface-container-high: #e3e3e3,
+    surface-container-highest: #dddddd,
+    on-surface: #1a1a1a,
+    shadow: #000000,
+    scrim: #000000,
+    surface-tint: #0066cc,
+    inverse-surface: #2f2f2f,
+    inverse-on-surface: #f1f1f1,
+    outline: #6b7280,
+    outline-variant: #c0c0c0,
+    neutral: #7a7a7a,
+    neutral10: #1a1a1a,
+    error: #d32f2f,
+    error-container: #ffcdd2,
+    on-error: #ffffff,
+    on-error-container: #5f0000,
+    surface-variant: #e0e0e0,
+    on-surface-variant: #5a5a5a,
+    neutral-variant: #7a7a7a,
+    neutral-variant20: #333333,
+    inverse-secondary: #99d5ff,
+    inverse-tertiary: #99dbff,
+  ));
+}
+
+/* Ocean Dark Theme */
+:root[data-theme="ocean-dark"],
+:host[data-theme="ocean-dark"] {
+  @include mat.theme-overrides((
+    primary: #99caff,
+    on-primary: #001f5c,
+    primary-container: #0050b3,
+    on-primary-container: #cce5ff,
+    inverse-primary: #0066cc,
+    primary-fixed: #cce5ff,
+    primary-fixed-dim: #99caff,
+    on-primary-fixed: #001f5c,
+    on-primary-fixed-variant: #0050b3,
+    secondary: #99d5ff,
+    on-secondary: #002e66,
+    secondary-container: #0067b3,
+    on-secondary-container: #ccebff,
+    secondary-fixed: #ccebff,
+    secondary-fixed-dim: #99d5ff,
+    on-secondary-fixed: #002e66,
+    on-secondary-fixed-variant: #0067b3,
+    tertiary: #99dbff,
+    on-tertiary: #004466,
+    tertiary-container: #0088b3,
+    on-tertiary-container: #ccf0ff,
+    tertiary-fixed: #ccf0ff,
+    tertiary-fixed-dim: #99dbff,
+    on-tertiary-fixed: #004466,
+    on-tertiary-fixed-variant: #0088b3,
+    background: #0f1419,
+    on-background: #e0e0e0,
+    surface: #0f1419,
+    surface-dim: #0f1419,
+    surface-bright: #353d47,
+    surface-container-lowest: #0a0e13,
+    surface-container-low: #171d26,
+    surface-container: #1b2230,
+    surface-container-high: #252d39,
+    surface-container-highest: #303843,
+    on-surface: #e0e0e0,
+    shadow: #000000,
+    scrim: #000000,
+    surface-tint: #99caff,
+    inverse-surface: #e0e0e0,
+    inverse-on-surface: #0f1419,
+    outline: #8fa2b8,
+    outline-variant: #4a5568,
+    neutral: #8fa2b8,
+    neutral10: #0f1419,
+    error: #ffb4b0,
+    error-container: #8b0000,
+    on-error: #5f0000,
+    on-error-container: #ffcdd2,
+    surface-variant: #4a5568,
+    on-surface-variant: #8fa2b8,
+    neutral-variant: #8fa2b8,
+    neutral-variant20: #353d47,
+    inverse-secondary: #0067b3,
+    inverse-tertiary: #0088b3,
   ));
 }
