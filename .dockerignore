@@ -1,0 +1,19 @@
+# Ignore Git-related files
+.git
+.gitignore
+
+# Ignore Node.js specific files and directories
+node_modules/
+npm-debug.log
+
+# Ignore Python specific files
+*.pyc
+__pycache__/
+
+# Ignore temporary or log files
+tmp/
+logs/
+*.log
+
+# Ignore sensitive configuration files (example)
+config.local.json

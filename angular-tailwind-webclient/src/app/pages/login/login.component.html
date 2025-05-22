@@ -168,8 +168,13 @@
             class="min-w-[120px]"
           >
             @if (isLoading) {
-            <mat-icon class="animate-spin mr-2">refresh</mat-icon>
-            Signing in... } @else { Sign in }
+              <ng-container>
+                <mat-icon class="animate-spin mr-2">refresh</mat-icon>
+                Signing in...
+              </ng-container>
+            } @else {
+              Sign in
+            }
           </button>
         </mat-card-actions>
       </mat-card>

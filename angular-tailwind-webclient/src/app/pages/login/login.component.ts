@@ -16,7 +16,6 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { NgOptimizedImage } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { LoginRequest } from '../../models/user';
 import { ThemeService } from '../../services/theme.service';
@@ -34,7 +33,6 @@ import { ThemeService } from '../../services/theme.service';
     MatSelectModule,
     ReactiveFormsModule,
     MatIconModule,
-    NgOptimizedImage,
   ],
 })
 export class LoginComponent {

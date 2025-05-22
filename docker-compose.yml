@@ -29,7 +29,7 @@ services:
 
   angular-frontend:
     build:
-      context: ./angular-webclient
+      context: ./angular-tailwind-webclient
       dockerfile: Dockerfile
     ports:
       - "80:80"

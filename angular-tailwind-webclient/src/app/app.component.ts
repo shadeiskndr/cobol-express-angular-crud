@@ -1,11 +1,10 @@
 import { Component, effect } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ThemeService } from './services/theme.service';
-import { TodosComponent } from './pages/todos/todos.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, TodosComponent],
+  imports: [RouterOutlet],
   template: '<router-outlet></router-outlet>',
 })
 export class AppComponent {
