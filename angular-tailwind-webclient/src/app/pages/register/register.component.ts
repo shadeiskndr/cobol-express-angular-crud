@@ -52,6 +52,21 @@ export class RegisterComponent {
     this.themeService.setColorTheme(colorTheme);
   }
 
+  cycleColorTheme() {
+    const availableThemes = this.themeService.getAvailableColorThemes();
+    const currentIndex = availableThemes.indexOf(this.colorTheme());
+    const nextIndex = (currentIndex + 1) % availableThemes.length;
+    this.themeService.setColorTheme(availableThemes[nextIndex]);
+  }
+
+  getThemeIcon(): string {
+    const themeIcons: Record<string, string> = {
+      purple: 'palette',
+      ocean: 'water',
+    };
+    return themeIcons[this.colorTheme()] || 'palette';
+  }
+
   form = new FormGroup(
     {
       username: new FormControl('', [

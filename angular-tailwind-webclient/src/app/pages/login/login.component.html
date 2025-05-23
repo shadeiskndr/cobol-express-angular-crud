@@ -4,13 +4,14 @@
   <!-- Theme Controls -->
   <div class="fixed top-6 right-6 z-50 flex items-center gap-2">
     <!-- Color Theme Selector -->
-    <mat-form-field appearance="outline" class="w-32">
-      <mat-label>Color</mat-label>
-      <mat-select [value]="colorTheme()" (selectionChange)="onColorThemeChange($event.value)">
-        <mat-option value="purple">Purple</mat-option>
-        <mat-option value="ocean">Ocean</mat-option>
-      </mat-select>
-    </mat-form-field>
+    <button
+      mat-icon-button
+      (click)="cycleColorTheme()"
+      class="text-on-surface"
+      [attr.aria-label]="'Cycle color theme'"
+    >
+      <mat-icon>{{ getThemeIcon() }}</mat-icon>
+    </button>
 
     <!-- Dark/Light Toggle -->
     <button

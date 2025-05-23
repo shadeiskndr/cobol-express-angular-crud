@@ -4,6 +4,7 @@
 
 # Ignore Node.js specific files and directories
 node_modules/
+.angular/
 npm-debug.log
 
 # Ignore Python specific files

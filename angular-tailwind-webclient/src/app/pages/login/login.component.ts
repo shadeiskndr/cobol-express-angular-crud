@@ -62,6 +62,21 @@ export class LoginComponent {
     this.themeService.setColorTheme(colorTheme);
   }
 
+  cycleColorTheme() {
+    const availableThemes = this.themeService.getAvailableColorThemes();
+    const currentIndex = availableThemes.indexOf(this.colorTheme());
+    const nextIndex = (currentIndex + 1) % availableThemes.length;
+    this.themeService.setColorTheme(availableThemes[nextIndex]);
+  }
+
+  getThemeIcon(): string {
+    const themeIcons: Record<string, string> = {
+      purple: 'palette',
+      ocean: 'water',
+    };
+    return themeIcons[this.colorTheme()] || 'palette';
+  }
+
   onSubmit() {
     if (this.form.valid && !this.isLoading) {
       this.isLoading = true;

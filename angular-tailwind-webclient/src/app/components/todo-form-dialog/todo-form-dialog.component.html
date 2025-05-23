@@ -66,6 +66,15 @@
           </div>
         </mat-option>
         }
+        <mat-select-trigger>
+          @for (status of statusOptions; track status.value) {
+            @if (status.value === todoForm.get('status')?.value) {
+              <div class="flex items-center space-x-2">
+                <span>{{ status.label }}</span>
+              </div>
+            }
+          }
+        </mat-select-trigger>
       </mat-select>
       <mat-icon matPrefix class="mr-2" [style.color]="'var(--mdc-theme-on-surface-variant)'">flag</mat-icon>
       @if ((todoForm.get('status')?.touched || todoForm.get('status')?.dirty) &&
