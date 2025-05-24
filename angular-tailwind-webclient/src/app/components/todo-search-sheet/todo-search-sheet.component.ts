@@ -30,13 +30,12 @@ export interface TodoSearchCriteria {
   template: `
     <div class="w-full max-w-2xl p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+        <h2 class="text-xl">
           Search Todos
         </h2>
         <button
           mat-icon-button
           (click)="onClose()"
-          class="text-gray-500 hover:text-gray-700"
         >
           <mat-icon>close</mat-icon>
         </button>
@@ -54,12 +53,12 @@ export interface TodoSearchCriteria {
          </mat-form-field>
 
          <mat-form-field class="w-full"  appearance="outline" >
-           <mat-label>Min Time (minutes)</mat-label>
+           <mat-label>Min Time (hours)</mat-label>
            <input matInput type="number" formControlName="minTime" />
          </mat-form-field>
 
          <mat-form-field class="w-full"  appearance="outline" >
-           <mat-label>Max Time (minutes)</mat-label>
+           <mat-label>Max Time (hours)</mat-label>
            <input matInput type="number" formControlName="maxTime" />
          </mat-form-field>
 
